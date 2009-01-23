@@ -18,7 +18,12 @@ class MorkParser(object):
             self._parseNext()
 
     def _parseNext(self):
-        pass
+        c = self._data[self._index]
+
+        if c == '<':
+            self._parseDict()
+        else:
+            raise Exception('XXX put real exception here')
 
     def _match(self, regex):
         m = regex.match(self._data, self._index)
@@ -33,3 +38,6 @@ class MorkParser(object):
     _comment = re.compile(r'//.*\n')
     def _eatComment(self):
         self._match(self._comment)
+
+    def _parseDict(self):
+        pass
