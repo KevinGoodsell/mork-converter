@@ -5,7 +5,7 @@ import sys
 tokens = (
     # 'Special' tokens
     'MAGIC',
-    'COMMENT',
+    #'COMMENT',
 
     # Common tokens
     'OBJREF',
@@ -15,7 +15,6 @@ tokens = (
     # Cell tokens
     'LPAREN',
     'RPAREN',
-    'COLUMN',
     'VALUE',
 
     # Wierd group stuff
@@ -44,8 +43,8 @@ def t_OBJID(t):
     r'[0-9a-fA-F]+'
     return t
 
-def t_LITERAL(t):
-    r'[a-zA-Z_][a-zA-Z_0-9]*' # XXX Not really accurate
+def t_ANY_LITERAL(t):
+    r'[a-zA-Z_0-9]+' # XXX Not really accurate
     return t
 
 # Cell tokens
@@ -58,10 +57,6 @@ def t_cell_RPAREN(t):
     r'\)'
     t.lexer.pop_state()
     return t
-
-t_cell_COLUMN = r'''
-    [^^=) \t\n] # Anything but ^, =, ) or whitespace
-    + '''
 
 t_cell_VALUE = r'''=
     ( [^)\\]  # Anything that's not ) or \
