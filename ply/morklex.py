@@ -29,8 +29,13 @@ states = (
 )
 
 # 'Special' tokens
-t_MAGIC = r'//\ <!--\ <mdb:mork:z\ v="1\.4"/>\ -->$'
-t_COMMENT = r'//.*$'
+def t_MAGIC(t):
+    r'//\ <!--\ <mdb:mork:z\ v="1\.4"/>\ -->$'
+    return t
+
+def t_COMMENT(t):
+    r'//.*$'
+    pass
 
 # Common tokens
 t_ANY_OBJREF = r'\^[0-9a-fA-F]+'
