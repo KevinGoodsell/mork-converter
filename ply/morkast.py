@@ -96,7 +96,10 @@ class ObjectId(MorkAst):
         self.scope = scope
 
     def __repr__(self):
-        return 'ObjectId(%r, %r)' % (self.objectid, self.scope)
+        if self.scope is None:
+            return 'ObjectId(%r)' % self.objectid
+        else:
+            return 'ObjectId(%r, %r)' % (self.objectid, self.scope)
 
 class ObjectRef(MorkAst):
     def __init__(self, obj):
