@@ -58,11 +58,17 @@ def t_cell_RPAREN(t):
     t.lexer.pop_state()
     return t
 
-t_cell_VALUE = r'''=
+def t_cell_VALUE(t):
+    r'''=
     ( [^)\\]  # Anything that's not ) or \
     | \\\\    # ...or \\
     | \\\)    # ...or \)
     )* '''
+    newlines = t.value.count('\n')
+    t.lexer.lineno += newlines
+    t.value = t.value[1:]
+    return t
+
 
 # Wierd group stuff
 t_GROUPSTART =  r'@\$\$\{[0-9a-fA-F]+\{@'
