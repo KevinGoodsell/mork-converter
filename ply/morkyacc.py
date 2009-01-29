@@ -6,7 +6,7 @@ import morkast
 
 def p_mork_db(p):
     'mork : MAGIC item_group_list'
-    p[0] = p[2]
+    p[0] = morkast.Database(p[2])
 
 def p_item_or_group(p):
     '''
@@ -236,3 +236,4 @@ yacc.yacc()
 
 data = open('../Drafts-1.msf').read()
 tree = yacc.parse(data)
+print tree
