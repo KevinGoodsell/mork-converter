@@ -232,8 +232,11 @@ def p_object_id_refscope(p):
 
 yacc.yacc()
 
-# DEBUG
+def parse(data):
+    return yacc.parse(data)
 
-data = open('../Drafts-1.msf').read()
-tree = yacc.parse(data)
-print tree
+def parseFile(f):
+    if isinstance(f, basestring):
+        f = open(f)
+
+    return parse(f.read())
