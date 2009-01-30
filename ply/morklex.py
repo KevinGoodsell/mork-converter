@@ -63,6 +63,7 @@ def t_cell_VALUE(t):
     ( [^)\\]  # Anything that's not ) or \
     | \\\\    # ...or \\
     | \\\)    # ...or \)
+    | \\\n    # ...or \nl
     )* '''
     newlines = t.value.count('\n')
     t.lexer.lineno += newlines
