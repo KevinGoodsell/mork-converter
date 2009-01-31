@@ -125,23 +125,21 @@ class Table(MorkAst):
         return 'Table %s:\n%s' % (self.tableid, self.indent(members))
 
 class MetaTable(MorkAst):
-    # XXX 'other' is the object ids that show up in meta tables. I don't
-    # know what these are for yet.
-    def __init__(self, cells=None, other=None):
+    def __init__(self, cells=None, rows=None):
         if cells is None:
             cells = []
-        if other is None:
-            other = []
+        if rows is None:
+            rows = []
 
         self.cells = cells
-        self.other = other
+        self.rows = rows
 
     def __repr__(self):
-        return 'MetaTable(%r, %r)' % (self.cells, self.other)
+        return 'MetaTable(%r, %r)' % (self.cells, self.rows)
 
     def __str__(self):
         members = '%s\n%s' % (self.indentList('cells', self.cells),
-            self.indentList('other', self.other))
+            self.indentList('rows', self.rows))
         return 'MetaTable:\n%s' % self.indent(members)
 
 class Cell(MorkAst):

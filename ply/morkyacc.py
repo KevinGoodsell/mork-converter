@@ -126,6 +126,13 @@ def p_meta_row(p):
     '''
     p[0] = morkast.MetaRow(p[2])
 
+def p_gereral_row(p):
+    '''
+    general_row : row
+                | object_id
+    '''
+    p[0] = p[1]
+
 def p_table(p):
     '''
     table : '{' object_id table_inner '}'
@@ -143,8 +150,7 @@ def p_table(p):
 def p_table_inner_row(p):
     '''
     table_inner :
-                | table_inner row
-                | table_inner object_id
+                | table_inner general_row
     '''
     if len(p) == 1:
         p[0] = { 'rows': [], 'meta': [] }
@@ -161,28 +167,27 @@ def p_table_inner_meta(p):
 
 def p_meta_table(p):
     '''
-    meta_table : '{' cell_objid_list '}'
+    meta_table : '{' cell_row_list '}'
     '''
-    p[0] = morkast.MetaTable(p[2]['cells'], p[2]['other'])
+    p[0] = morkast.MetaTable(p[2]['cells'], p[2]['rows'])
 
-# XXX object IDs in meta tables seems to violate the spec but matches my sample
-# files.
-def p_cell_objid_list_cell(p):
+# XXX Rows appear in metatables. I don't know why.
+def p_cell_row_list_cell(p):
     '''
-    cell_objid_list :
-                    | cell_objid_list cell
+    cell_row_list :
+                  | cell_row_list cell
     '''
     if len(p) == 1:
-        p[0] = { 'cells': [], 'other': [] }
+        p[0] = { 'cells': [], 'rows': [] }
     else:
         p[1]['cells'].append(p[2])
         p[0] = p[1]
 
-def p_cell_objid_list_objid(p):
+def p_cell_row_list_row(p):
     '''
-    cell_objid_list : cell_objid_list object_id
+    cell_row_list : cell_row_list general_row
     '''
-    p[1]['other'].append(p[2])
+    p[1]['rows'].append(p[2])
     p[0] = p[1]
 
 def p_cell_list(p):
