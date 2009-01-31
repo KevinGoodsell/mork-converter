@@ -218,20 +218,20 @@ def p_cell_value(p):
 
 def p_object_reference(p):
     '''
-    object_reference : OBJREF
-                     | OBJREF ':' LITERAL
+    object_reference : '^' LITERAL
+                     | '^' LITERAL ':' LITERAL
     '''
-    if len(p) == 2:
-        obj = morkast.ObjectId(p[1][1:])
+    if len(p) == 3:
+        obj = morkast.ObjectId(p[2])
     else:
-        obj = morkast.ObjectId(p[1][1:], p[3])
+        obj = morkast.ObjectId(p[2], p[4])
 
     p[0] = morkast.ObjectRef(obj)
 
 def p_object_id(p):
     '''
-    object_id : OBJID
-              | OBJID ':' LITERAL
+    object_id : LITERAL
+              | LITERAL ':' LITERAL
     '''
     if len(p) == 2:
         p[0] = morkast.ObjectId(p[1])
@@ -240,11 +240,9 @@ def p_object_id(p):
 
 def p_object_id_refscope(p):
     '''
-    object_id : OBJID ':' OBJREF
+    object_id : LITERAL ':' object_reference
     '''
-    scopeObj = morkast.ObjectId(p[3][1:])
-    scope = morkast.ObjectRef(scopeObj)
-    p[0] = morkast.ObjectId(p[1], scope)
+    p[0] = morkast.ObjectId(p[1], p[3])
 
 yacc.yacc()
 

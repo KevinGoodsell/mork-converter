@@ -1,4 +1,5 @@
-
+import re
+import ply.yacc as yacc
 
 class MorkAst(object):
     @staticmethod
@@ -155,7 +156,12 @@ class Cell(MorkAst):
         return 'Cell: %s = %s' % (self.column, self.value)
 
 class ObjectId(MorkAst):
+    _validator = re.compile(r'[a-zA-Z0-9]+')
+
     def __init__(self, objectid, scope=None):
+        if self._validator.match(objectid) is None:
+            raise yacc.SyntaxError
+
         self.objectid = objectid
         self.scope = scope
 

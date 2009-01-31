@@ -1,6 +1,5 @@
 * Meta tables can apparently have rows, both literal and referenced by id.
   * Maybe make 'row' non-terminal a literal row or id.
-* Try making '^' a seperate token, and make a 'reference' non-terminal.
 * There are several places where a '-' can indicate removing things:
   * [-...] to remove all columns from the row
   * {-...} to remove all rows from the table

@@ -8,8 +8,6 @@ tokens = (
     #'COMMENT',
 
     # Common tokens
-    'OBJREF',
-    'OBJID',
     'LITERAL',
 
     # Cell tokens
@@ -37,12 +35,6 @@ def t_COMMENT(t):
     pass
 
 # Common tokens
-t_ANY_OBJREF = r'\^[0-9a-fA-F]+'
-
-def t_OBJID(t):
-    r'[0-9a-fA-F]+'
-    return t
-
 def t_ANY_LITERAL(t):
     r'[a-zA-Z_0-9]+' # XXX Not really accurate
     return t
@@ -80,7 +72,7 @@ t_GROUPABORT =  r'@\$\$\}~abort~[0-9a-fA-F]+\}@'
 
 t_ANY_ignore = ' \t'
 
-literals = '<>[]{}:-'
+literals = '<>[]{}:-^'
 
 def t_ANY_newline(t):
     r'\n+'
