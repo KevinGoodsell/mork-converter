@@ -80,7 +80,7 @@ t_GROUPABORT =  r'@\$\$\}~abort~[0-9a-fA-F]+\}@'
 
 t_ANY_ignore = ' \t'
 
-literals = '<>[]{}:'
+literals = '<>[]{}:-'
 
 def t_ANY_newline(t):
     r'\n+'

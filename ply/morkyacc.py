@@ -91,8 +91,16 @@ def p_meta_dict(p):
 def p_row(p):
     '''
     row : '[' object_id row_inner ']'
+        | '[' '-' object_id row_inner ']'
     '''
-    p[0] = morkast.Row(p[2], p[3]['cells'], p[3]['meta'])
+    if len(p) == 6:
+        cut = True
+        objid, inner = p[3:5]
+    else:
+        cut = False
+        objid, inner = p[2:4]
+
+    p[0] = morkast.Row(objid, inner['cells'], inner['meta'], cut)
 
 def p_row_inner_cell(p):
     '''
@@ -121,8 +129,16 @@ def p_meta_row(p):
 def p_table(p):
     '''
     table : '{' object_id table_inner '}'
+          | '{' '-' object_id table_inner '}'
     '''
-    p[0] = morkast.Table(p[2], p[3]['rows'], p[3]['meta'])
+    if len(p) == 6:
+        cut = True
+        objid, inner = p[3:5]
+    else:
+        cut = False
+        objid, inner = p[2:4]
+
+    p[0] = morkast.Table(objid, inner['rows'], inner['meta'], cut)
 
 def p_table_inner_row(p):
     '''
