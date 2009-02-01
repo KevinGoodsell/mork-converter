@@ -1,6 +1,2 @@
-* There are several places where a '-' can indicate removing things:
-  * [-...] to remove all columns from the row
-  * {-...} to remove all rows from the table
-  * -(...) to remove a cell
-  * -[...] to remove a row
 * morkParser.cpp is a good reference.
+* Look into cleaning up parsing tables, rows, and cells with '-'.

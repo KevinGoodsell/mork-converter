@@ -31,7 +31,6 @@ def p_item(p):
          | row
          | table
     '''
-    # XXX This is missing updates
     p[0] = p[1]
 
 def p_item_list(p):
@@ -94,13 +93,24 @@ def p_row(p):
         | '[' '-' object_id row_inner ']'
     '''
     if len(p) == 6:
-        cut = True
+        trunc = True
         objid, inner = p[3:5]
     else:
-        cut = False
+        trunc = False
         objid, inner = p[2:4]
 
-    p[0] = morkast.Row(objid, inner['cells'], inner['meta'], cut)
+    p[0] = morkast.Row(objid, inner['cells'], inner['meta'], trunc = trunc)
+
+def p_update_row(p):
+    '''
+    update_row : row
+               | '-' row
+    '''
+    if len(p) == 3:
+        p[2].cut = True
+        p[0] = p[2]
+    else:
+        p[0] = p[1]
 
 def p_row_inner_cell(p):
     '''
@@ -128,7 +138,7 @@ def p_meta_row(p):
 
 def p_gereral_row(p):
     '''
-    general_row : row
+    general_row : update_row
                 | object_id
     '''
     p[0] = p[1]
@@ -139,13 +149,13 @@ def p_table(p):
           | '{' '-' object_id table_inner '}'
     '''
     if len(p) == 6:
-        cut = True
+        trunc = True
         objid, inner = p[3:5]
     else:
-        cut = False
+        trunc = False
         objid, inner = p[2:4]
 
-    p[0] = morkast.Table(objid, inner['rows'], inner['meta'], cut)
+    p[0] = morkast.Table(objid, inner['rows'], inner['meta'], trunc)
 
 def p_table_inner_row(p):
     '''
@@ -204,8 +214,12 @@ def p_cell_list(p):
 def p_cell(p):
     '''
     cell : LPAREN cell_column cell_value RPAREN
+         | '-' LPAREN cell_column cell_value RPAREN
     '''
-    p[0] = morkast.Cell(p[2], p[3])
+    if len(p) == 6:
+        p[0] = morkast.Cell(p[3], p[4], cut = True)
+    else:
+        p[0] = morkast.Cell(p[2], p[3])
 
 def p_cell_column(p):
     '''

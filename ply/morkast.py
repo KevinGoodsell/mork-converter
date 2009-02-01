@@ -71,7 +71,7 @@ class MetaDict(Dict):
         return self.indentList('MetaDict', self.cells)
 
 class Row(MorkAst):
-    def __init__(self, rowid, cells=None, meta=None, cut=False):
+    def __init__(self, rowid, cells=None, meta=None, trunc=False, cut=False):
         if cells is None:
             cells = []
         if meta is None:
@@ -80,14 +80,15 @@ class Row(MorkAst):
         self.rowid = rowid
         self.cells = cells
         self.meta = meta
+        self.trunc = trunc
         self.cut = cut
 
     def __repr__(self):
-        return 'Row(%r, %r, %r, %r)' % (self.rowid, self.cells, self.meta,
-            self.cut)
+        return 'Row(%r, %r, %r, %r, %r)' % (self.rowid, self.cells, self.meta,
+            self.trunc, self.cut)
 
     def __str__(self):
-        members = 'cut: %s\n%s\n%s' % (self.cut,
+        members = 'trunc: %s\ncut: %s\n%s\n%s' % (self.trunc, self.cut,
             self.indentList('meta', self.meta),
             self.indentList('cells', self.cells))
         return 'Row %s:\n%s' % (self.rowid, self.indent(members))
@@ -103,7 +104,7 @@ class MetaRow(Row):
         return 'MetaRow:\n%s' % self.indentList('cells', self.cells)
 
 class Table(MorkAst):
-    def __init__(self, tableid, rows=None, meta=None, cut=False):
+    def __init__(self, tableid, rows=None, meta=None, trunc=False):
         if rows is None:
             rows = []
         if meta is None:
@@ -112,14 +113,14 @@ class Table(MorkAst):
         self.tableid = tableid
         self.rows = rows
         self.meta = meta
-        self.cut = cut
+        self.trunc = trunc
 
     def __repr__(self):
         return 'Table(%r, %r, %r, %r)' % (self.tableid, self.rows, self.meta,
-            self.cut)
+            self.trunc)
 
     def __str__(self):
-        members = 'cut: %s\n%s\n%s' % (self.cut,
+        members = 'trunc: %s\n%s\n%s' % (self.trunc,
             self.indentList('meta', self.meta),
             self.indentList('rows', self.rows))
         return 'Table %s:\n%s' % (self.tableid, self.indent(members))
@@ -143,15 +144,19 @@ class MetaTable(MorkAst):
         return 'MetaTable:\n%s' % self.indent(members)
 
 class Cell(MorkAst):
-    def __init__(self, column, value):
+    def __init__(self, column, value, cut=False):
         self.column = column
         self.value = value
+        self.cut = cut
 
     def __repr__(self):
-        return 'Cell(%r, %r)' % (self.column, self.value)
+        return 'Cell(%r, %r, %r)' % (self.column, self.value, self.cut)
 
     def __str__(self):
-        return 'Cell: %s = %s' % (self.column, self.value)
+        cut = ''
+        if self.cut:
+            cut = ' (cut)'
+        return 'Cell: %s = %s%s' % (self.column, self.value, cut)
 
 class ObjectId(MorkAst):
     _validator = re.compile(r'[a-zA-Z0-9]+')
