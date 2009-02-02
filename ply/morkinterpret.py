@@ -61,9 +61,9 @@ class _MorkBuilder(object):
 
         return self._unescapeMap[text]
 
-    _escape = re.compile(r'\$[0-9a-zA-Z]{2}|\\.|\\\r\n', re.DOTALL)
+    _escape = re.compile(r'\$[0-9a-zA-Z]{2}|\\\r\n|\\.', re.DOTALL)
     def unescape(self, value):
-        _escape.sub(self.translateEscape, value)
+        self._escape.sub(self.translateEscape, value)
 
     def buildDict(self, astDict):
         # In this case, inflateCells should only be unescaping values.
