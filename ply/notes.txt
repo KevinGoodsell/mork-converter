@@ -1,2 +1,3 @@
 * morkParser.cpp is a good reference.
 * Look into cleaning up parsing tables, rows, and cells with '-'.
+* Look for atomScope stuff in morkBuilder, morkStore, maybe morkWriter.
