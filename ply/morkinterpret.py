@@ -31,7 +31,9 @@ class _MorkBuilder(object):
 
     def inflateId(self, objid, defaultNamespace):
         namespace = objid.scope or defaultNamespace
-        return self.db.dicts[namespace][objid.objcetid]
+        if isinstance(namespace, morkast.ObjectRef):
+            namespace = self.inflateId(namespace.obj, 'c')
+        return self.db.dicts[namespace][objid.objectid]
 
     def inflateCells(self, cells, columnNamespace='c', atomNamespace='a'):
         inflated = []
@@ -61,9 +63,9 @@ class _MorkBuilder(object):
 
         return self._unescapeMap[text]
 
-    _escape = re.compile(r'\$[0-9a-zA-Z]{2}|\\\r\n|\\.', re.DOTALL)
+    _escape = re.compile(r'\$[0-9a-fA-F]{2}|\\\r\n|\\.', re.DOTALL)
     def unescape(self, value):
-        self._escape.sub(self.translateEscape, value)
+        return self._escape.sub(self.translateEscape, value)
 
     def buildDict(self, astDict):
         # In this case, inflateCells should only be unescaping values.
@@ -84,8 +86,14 @@ class _MorkBuilder(object):
     def buildTable(self, astTable):
         pass
 
-    def buildRow(self, astRow):
-        pass
+    def buildRow(self, astRow, defaultNamespace='c'):
+        cells = dict(self.inflateCells(astRow.cells))
+        scope = astRow.rowid.scope or defaultNamespace
+        if isinstance(scope, morkast.ObjectRef):
+            scope = self.inflateId(scope.obj, 'c')
+
+        d = self.db.rows.setdefault(scope, {})
+        d[astRow.rowid.objectid] = cells
 
     def buildGroup(self, astGroup):
         pass
