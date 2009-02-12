@@ -84,7 +84,27 @@ class _MorkBuilder(object):
         d.update(cells)
 
     def buildTable(self, astTable):
-        pass
+        # XXX I'm not really sure where the rowScope comes from.
+        rowScope = astTable.tableid.scope
+        assert rowScope is not None, 'Table missing rowScope'
+        if isinstance(rowScope, morkast.ObjectRef):
+            rowScope = self.inflateId(rowScope.obj, 'c')
+
+        tableId = astTable.tableid.objectid
+
+        rows = []
+        for row in astTable.rows:
+            if isinstance(row, morkast.Row):
+                self.buildRow(row, rowScope)
+                rowId = row.rowid
+            else:
+                rowId = row
+
+            realRow = self.db.rows[rowScope][rowId.objectid]
+            rows.append(realRow)
+
+        tables = self.db.tables.setdefault(rowScope, {})
+        tables[tableId] = rows
 
     def buildRow(self, astRow, defaultNamespace='c'):
         cells = dict(self.inflateCells(astRow.cells))
