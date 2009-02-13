@@ -1,4 +1,5 @@
 import warnings
+import re
 
 import morkast
 
@@ -19,7 +20,7 @@ class _MorkDict(dict):
         # Create a _MorkDict from ast.cells
         cells = _MorkDict()
         for cell in ast.cells:
-            cells[cell.column] = cell.value
+            cells[cell.column] = db._unescape(cell.value)
             if cell.cut:
                 warnings.warn("ignoring cell's 'cut' attribute")
 
@@ -86,8 +87,32 @@ class _MorkRow(dict):
         return self.keys()
 
     @staticmethod
-    def fromAst(ast, db):
+    def fromAst(ast, db, defaultNamespace=None):
         assert isinstance(ast, morkast.Row)
+
+        self = _MorkRow()
+        for cell in ast.cells:
+            (column, value) = db._inflateCell(cell)
+            self[column] = value
+
+        # Get id and namespace
+        (oid, namespace) = db._dissectId(ast.rowid)
+        if namespace is None:
+            namespace = defaultNamespace
+
+        assert namespace is not None, 'no namespace found for row'
+
+        if ast.trunc:
+            warning.warn("ignoring row's 'trucated' attribute")
+        if ast.cut:
+            warning.warn("ignoring row's 'cut' attribute")
+        if ast.meta:
+            warning.warn('ignoring meta-row')
+
+        # insert into row store
+        db.rows[namespace, oid] = self
+
+        return self
 
 class MorkDatabase(object):
     def __init__(self):
@@ -98,6 +123,60 @@ class MorkDatabase(object):
 
         self.dicts['a'] = _MorkDict()
         self.dicts['c'] = _MorkDict()
+
+    # **** A bunch of utility methods ****
+
+    def _dictDeref(self, objref, defaultNamespace='c'):
+        assert isinstance(objref, morkast.ObjectRef)
+
+        (oid, namespace) = self._dissectId(objref.obj)
+        if namespace is None:
+            namespace = defaultNamespace
+
+        return self.dicts[namespace][oid]
+
+    def _dissectId(self, oid):
+        '''
+        Return ('objectId', 'namespace') or ('objectId', None) if the
+        namespace cannot be determined.
+        '''
+        assert isinstance(oid, morkast.ObjectId)
+
+        namespace = oid.scope
+        if isinstance(namespace, morkast.ObjectRef):
+            namespace = self._dictDeref(namespace)
+
+        return (oid.objectid, namespace)
+
+    _unescapeMap = {
+        r'\)': ')', r'\\': '\\', r'\$': '$', # basic escapes
+        '\\\r\n': '', '\\\n': '',            # line continuation
+    }
+    def _translateEscape(self, match):
+        text = match.group()
+        if text.startswith('$'):
+            return chr(int(text[1:], 16))
+
+        return self._unescapeMap[text]
+
+    _escape = re.compile(r'\$[0-9a-fA-F]{2}|\\\r\n|\\.', re.DOTALL)
+    def _unescape(self, value):
+        return self._escape.sub(self._translateEscape, value)
+
+    def _inflateCell(self, cell):
+        column = cell.column
+        if isinstance(column, morkast.ObjectRef):
+            column = self._dictDeref(column)
+
+        value = cell.value
+        if isinstance(value, morkast.ObjectRef):
+            value = self._dictDeref(value, 'a')
+        else:
+            value = self._unescape(value)
+
+        return (column, value)
+
+    # **** Database builder ****
 
     _builder = {
         morkast.Dict:  _MorkDict.fromAst,
