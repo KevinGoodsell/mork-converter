@@ -7,7 +7,7 @@ class _MorkDict(dict):
     def __init__(self):
         dict.__init__(self)
 
-        # XXX I'm not really sure this initialization is right.
+        # I'm not really sure this initialization is right.
         for i in xrange(0x80):
             col = '%X' % i
             value = chr(i)
@@ -63,7 +63,7 @@ class _MorkTable(object):
         if rows is None:
             rows = []
 
-        self._rows = set(rows)
+        self._rows = rows
 
     def columnNames(self):
         columns = set()
@@ -73,11 +73,40 @@ class _MorkTable(object):
         return columns
 
     def addRow(self, row):
-        self._rows.add(row)
+        self._rows.append(row)
 
     @staticmethod
     def fromAst(ast, db):
         assert isinstance(ast, morkast.Table)
+
+        # Get id and namespace
+        (oid, namespace) = db._dissectId(ast.tableid)
+        assert namespace is not None, 'no namespace found for table'
+
+        rows = []
+        for row in ast.rows:
+            # row could be ObjectId or Row
+            if isinstance(row, morkast.ObjectId):
+                (rowId, rowNamespace) = db._dissectId(row)
+                if rowNamespace is None:
+                    rowNamespace = namespace
+                newRow = db.rows[rowNamespace, rowId]
+            else:
+                newRow = _MorkRow.fromAst(row, db, namespace)
+
+            rows.append(newRow)
+
+        self = _MorkTable(rows)
+
+        if ast.trunc:
+            warnings.warn("ignoring table's 'truncated' attribute")
+        if ast.meta:
+            warnings.warn('ignoring meta-table')
+
+        # Insert into table store
+        db.tables[namespace, oid] = self
+
+        return self
 
 class _MorkRow(dict):
     def __init__(self):
@@ -103,11 +132,11 @@ class _MorkRow(dict):
         assert namespace is not None, 'no namespace found for row'
 
         if ast.trunc:
-            warning.warn("ignoring row's 'trucated' attribute")
+            warnings.warn("ignoring row's 'trucated' attribute")
         if ast.cut:
-            warning.warn("ignoring row's 'cut' attribute")
+            warnings.warn("ignoring row's 'cut' attribute")
         if ast.meta:
-            warning.warn('ignoring meta-row')
+            warnings.warn('ignoring meta-row')
 
         # insert into row store
         db.rows[namespace, oid] = self
@@ -201,7 +230,7 @@ class MorkDatabase(object):
         return self
 
 
-# XXX Test
+# Test
 import sys
 
 import morkyacc
