@@ -84,5 +84,16 @@ def t_ANY_error(t):
 
 lex.lex(reflags=re.MULTILINE)
 
+def printTokens(f):
+    if isinstance(f, basestring):
+        f = open(f)
+
+    lex.input(f.read())
+    while True:
+        tok = lex.token()
+        if not tok:
+            break
+        print tok
+
 if __name__ == '__main__':
     lex.runmain()
