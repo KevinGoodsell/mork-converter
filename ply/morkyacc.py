@@ -263,6 +263,14 @@ def p_object_id_refscope(p):
     '''
     p[0] = morkast.ObjectId(p[1], p[3])
 
+def p_error(tok):
+    if tok is None:
+        print 'Syntax error at end of input'
+    else:
+        print 'Syntax error at token', tok
+        # Try to continue
+        yacc.errok()
+
 yacc.yacc()
 
 def parse(data):
