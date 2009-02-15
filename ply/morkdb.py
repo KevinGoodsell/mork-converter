@@ -3,7 +3,7 @@ import re
 
 import morkast
 
-class _MorkDict(dict):
+class MorkDict(dict):
     def __init__(self):
         dict.__init__(self)
 
@@ -17,8 +17,8 @@ class _MorkDict(dict):
     def fromAst(ast, db):
         assert isinstance(ast, morkast.Dict)
 
-        # Create a _MorkDict from ast.cells
-        cells = _MorkDict()
+        # Create a MorkDict from ast.cells
+        cells = MorkDict()
         for cell in ast.cells:
             cells[cell.column] = db._unescape(cell.value)
             if cell.cut:
@@ -52,13 +52,18 @@ class _MorkStore(object):
         (namespace, oid) = key
         self._store.setdefault(namespace, {})[oid] = value
 
-class _MorkTableStore(_MorkStore):
+    def items(self):
+        for (namespace, objs) in self._store.items():
+            for (oid, obj) in objs.items():
+                yield (namespace, oid, obj)
+
+class MorkTableStore(_MorkStore):
     pass
 
-class _MorkRowStore(_MorkStore):
+class MorkRowStore(_MorkStore):
     pass
 
-class _MorkTable(object):
+class MorkTable(object):
     def __init__(self, rows=None):
         if rows is None:
             rows = []
@@ -74,6 +79,10 @@ class _MorkTable(object):
 
     def addRow(self, row):
         self._rows.append(row)
+
+    def __iter__(self):
+        for row in self._rows:
+            yield row
 
     @staticmethod
     def fromAst(ast, db):
@@ -92,11 +101,11 @@ class _MorkTable(object):
                     rowNamespace = namespace
                 newRow = db.rows[rowNamespace, rowId]
             else:
-                newRow = _MorkRow.fromAst(row, db, namespace)
+                newRow = MorkRow.fromAst(row, db, namespace)
 
             rows.append(newRow)
 
-        self = _MorkTable(rows)
+        self = MorkTable(rows)
 
         if ast.trunc:
             warnings.warn("ignoring table's 'truncated' attribute")
@@ -108,7 +117,7 @@ class _MorkTable(object):
 
         return self
 
-class _MorkRow(dict):
+class MorkRow(dict):
     def __init__(self):
         dict.__init__(self)
 
@@ -119,7 +128,7 @@ class _MorkRow(dict):
     def fromAst(ast, db, defaultNamespace=None):
         assert isinstance(ast, morkast.Row)
 
-        self = _MorkRow()
+        self = MorkRow()
         for cell in ast.cells:
             (column, value) = db._inflateCell(cell)
             self[column] = value
@@ -145,13 +154,13 @@ class _MorkRow(dict):
 
 class MorkDatabase(object):
     def __init__(self):
-        self.dicts = {} # { 'namespace': _MorkDict }
-        self.tables = _MorkTableStore()
-        self.rows = _MorkRowStore()
+        self.dicts = {} # { 'namespace': MorkDict }
+        self.tables = MorkTableStore()
+        self.rows = MorkRowStore()
         #self.groups = {}
 
-        self.dicts['a'] = _MorkDict()
-        self.dicts['c'] = _MorkDict()
+        self.dicts['a'] = MorkDict()
+        self.dicts['c'] = MorkDict()
 
     # **** A bunch of utility methods ****
 
@@ -208,9 +217,9 @@ class MorkDatabase(object):
     # **** Database builder ****
 
     _builder = {
-        morkast.Dict:  _MorkDict.fromAst,
-        morkast.Row:   _MorkRow.fromAst,
-        morkast.Table: _MorkTable.fromAst,
+        morkast.Dict:  MorkDict.fromAst,
+        morkast.Row:   MorkRow.fromAst,
+        morkast.Table: MorkTable.fromAst,
     }
 
     @staticmethod
