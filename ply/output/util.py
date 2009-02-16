@@ -9,7 +9,10 @@ def convertArgs(usage, args):
     try:
         for (argName, value) in args.items():
             converter = converters[argName]
-            result[argName] = converter(value)
+            if converter is None:
+                result[argName] = value
+            else:
+                result[argName] = converter(value)
     except KeyError:
         raise ArgumentError('unrecognized argument: %s' % argName)
 
