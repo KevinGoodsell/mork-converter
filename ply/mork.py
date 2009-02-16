@@ -1,8 +1,6 @@
 import sys
 import getopt
 
-import output.csv
-
 def usage(msg=None):
     if msg:
         print >> sys.stderr, msg
@@ -37,6 +35,23 @@ def getFilter(nameAndArgs):
 
     return (sys.modules[moduleName], argDict)
 
+def printTokens(f):
+    import morklex
+    morklex.printTokens(f)
+
+def printSyntaxTree(f):
+    import morkyacc
+    tree = morkyacc.parseFile(f)
+    print tree
+
+def filterFile(f, module, moduleArgs):
+    import morkdb
+    import morkyacc
+
+    tree = morkyacc.parseFile(f)
+    db = morkdb.MorkDatabase.fromAst(tree)
+    module.output(db, moduleArgs)
+
 def main(args=None):
     if args is None:
         args = sys.argv[1:]
@@ -51,9 +66,8 @@ def main(args=None):
     tokens = False
     syntax = False
     formatGiven = False
-    # XXX refactor
-    filterModule = output.csv
-    filterArgs = {'singlefile' : ''}
+    format = 'csv:singlefile'
+
     for (opt, val) in options:
         if opt in ('-h', '--help'):
             usage()
@@ -64,11 +78,7 @@ def main(args=None):
             syntax = True
         elif opt == '--format':
             formatGiven = True
-            try:
-                (filterModule, filterArgs) = getFilter(val)
-            except BadFilter, e:
-                print >> sys.stderr, str(e)
-                return 1
+            format = val
 
     mutualyExclusive = [opt for opt in (tokens, syntax, formatGiven) if opt]
     if len(mutualyExclusive) > 1:
@@ -78,26 +88,21 @@ def main(args=None):
     if len(arguments) == 0:
         arguments = ['-']
 
+    if not tokens and not syntax:
+        (filterModule, filterArgs) = getFilter(format)
+
     for arg in arguments:
         if arg == '-':
             f = sys.stdin
         else:
             f = open(arg)
 
-        # XXX Refactor this
         if tokens:
-            import morklex
-            morklex.printTokens(f)
+            printTokens(f)
+        elif syntax:
+            printSyntaxTree(f)
         else:
-            import morkyacc
-            tree = morkyacc.parseFile(f)
-            if syntax:
-                print tree
-            else:
-                # XXX Not much to do with DBs right now
-                import morkdb
-                db = morkdb.MorkDatabase.fromAst(tree)
-                filterModule.output(db, filterArgs)
+            filterFile(f, filterModule, filterArgs)
 
 
 if __name__ == '__main__':
