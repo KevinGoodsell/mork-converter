@@ -175,13 +175,13 @@ def p_table_inner_meta(p):
     p[1]['meta'].append(p[2])
     p[0] = p[1]
 
+# Rows appear in metatables. I don't know why.
 def p_meta_table(p):
     '''
     meta_table : '{' cell_row_list '}'
     '''
     p[0] = morkast.MetaTable(p[2]['cells'], p[2]['rows'])
 
-# XXX Rows appear in metatables. I don't know why.
 def p_cell_row_list_cell(p):
     '''
     cell_row_list :
