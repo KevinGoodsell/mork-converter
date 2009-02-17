@@ -2,7 +2,8 @@ import re
 import os
 
 import output.util as util
-import morkdb
+
+_MORK_OUTPUT_FILTER = True
 
 usage = [
     util.Argument('outname', 'Name to use for output directory (or file, if'
@@ -34,8 +35,8 @@ def _outputHelper(db, outname='csvout', singlefile=False):
 
 _needsQuotes = re.compile(r'''
   [,\r\n"] # Characters that force double-quoting
-| (^[ \t]) # Leading and ...
-| ([ \t]$) # ...trailing whitespace
+| (^[ \t]) # Leading whitespace
+| ([ \t]$) # Trailing whitespace
 ''', re.VERBOSE)
 
 def _formatCsvValue(value):
@@ -50,6 +51,8 @@ def _formatCsvValue(value):
     return value
 
 def _writeCsv(f, table):
+    import morkdb
+
     assert isinstance(table, morkdb.MorkTable)
 
     headers = list(table.columnNames())

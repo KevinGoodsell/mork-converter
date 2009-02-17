@@ -1,6 +1,8 @@
 import sys
 import getopt
 
+import output
+
 def usage(msg=None):
     if msg:
         print >> sys.stderr, msg
@@ -8,10 +10,7 @@ def usage(msg=None):
         ' [--help] [file ...]' % sys.argv[0])
     # XXX need help for output formats
 
-class BadFilter(StandardError):
-    pass
-
-def getFilter(nameAndArgs):
+def splitFilterArgs(nameAndArgs):
     pieces = nameAndArgs.split(':')
     filterName = pieces[0]
     args = pieces[1:]
@@ -27,13 +26,7 @@ def getFilter(nameAndArgs):
 
         argDict[argName] = argVal
 
-    moduleName = 'output.' + filterName
-    try:
-        exec 'import ' + moduleName
-    except ImportError:
-        raise BadFilter('output filter "%s" not found' % filterName)
-
-    return (sys.modules[moduleName], argDict)
+    return (filterName, argDict)
 
 def printTokens(f):
     import morklex
@@ -89,7 +82,8 @@ def main(args=None):
         arguments = ['-']
 
     if not tokens and not syntax:
-        (filterModule, filterArgs) = getFilter(format)
+        (filterName, filterArgs) = splitFilterArgs(format)
+        filterModule = output.getFilter(filterName)
 
     for arg in arguments:
         if arg == '-':
