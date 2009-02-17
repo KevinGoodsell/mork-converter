@@ -4,7 +4,6 @@ import os
 class BadFilter(StandardError):
     pass
 
-# XXX Refactor importing.
 def getFilter(name):
     moduleName = 'output.' + name
     try:
@@ -29,14 +28,11 @@ def iterFilters():
             continue
         modulesSeen.add(filtName)
 
-        modName = 'output.' + filtName
         try:
-            exec 'import ' + modName
+            module = getFilter(filtName)
         except (KeyboardInterrupt, SystemExit):
             raise
         except Exception:
             continue
 
-        module = sys.modules[modName]
-        if hasattr(module, '_MORK_OUTPUT_FILTER'):
-            yield (filtName, module)
+        yield (filtName, module)
