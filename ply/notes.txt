@@ -3,4 +3,3 @@
 * Might want a custom warning class for unimplemented mork features.
 * Missing a lot of exception handling.
 * Might want to try removing dict initialization.
-* CSV output is a little messy. Unnecessary newlines for empty tables.

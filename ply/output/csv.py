@@ -56,6 +56,8 @@ def _writeCsv(f, table):
     assert isinstance(table, morkdb.MorkTable)
 
     headers = list(table.columnNames())
+    if len(headers) == 0:
+        return
     headers.sort()
 
     headerline = ','.join(_formatCsvValue(header) for header in headers)
