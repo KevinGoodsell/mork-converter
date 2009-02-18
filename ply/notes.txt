@@ -2,4 +2,3 @@
 * Look into cleaning up parsing tables, rows, and cells with '-'.
 * Might want a custom warning class for unimplemented mork features.
 * Missing a lot of exception handling.
-* Might want to try removing dict initialization.

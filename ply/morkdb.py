@@ -7,7 +7,8 @@ class MorkDict(dict):
     def __init__(self):
         dict.__init__(self)
 
-        # I'm not really sure this initialization is right.
+        # I'm not really sure this initialization is right. It seems
+        # unnecessary in test files, but should also be harmless.
         for i in xrange(0x80):
             col = '%X' % i
             value = chr(i)
