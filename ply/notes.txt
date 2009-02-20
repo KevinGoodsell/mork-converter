@@ -2,3 +2,8 @@
 * Look into cleaning up parsing tables, rows, and cells with '-'.
 * Might want a custom warning class for unimplemented mork features.
 * Missing a lot of exception handling.
+
+Groups and updates
+* My best guess is that a - before the ID means "remove all items, then
+  process what follows." This assumes that the ID may or may not exist
+  (i.e., the - is basically a no-op for a non-existing item).

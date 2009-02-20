@@ -22,8 +22,8 @@ class MorkDict(dict):
         cells = MorkDict()
         for cell in ast.cells:
             cells[cell.column] = db._unescape(cell.value)
-            if cell.cut:
-                warnings.warn("ignoring cell's 'cut' attribute")
+            # 'cut' doesn't seem to have any meaning in a dict
+            assert not cell.cut, "found a 'cut' cell in a dict"
 
         # Find the namespace (if any) in ast.meta
         namespace = 'a'
@@ -32,7 +32,8 @@ class MorkDict(dict):
             for cell in ast.meta[0].cells:
                 if cell.column == 'a':
                     namespace = cell.value
-                    break
+                else:
+                    warnings.warn('ignoring some meta-dict cells')
 
         existing = db.dicts.get(namespace)
         if existing is None:
@@ -52,6 +53,14 @@ class _MorkStore(object):
     def __setitem__(self, key, value):
         (namespace, oid) = key
         self._store.setdefault(namespace, {})[oid] = value
+
+    def get(self, key, default=None):
+        result = default
+        (namespace, oid) = key
+        ns = self._store.get(namespace)
+        if ns:
+            result = ns.get(oid, default)
+        return result
 
     def items(self):
         for (namespace, objs) in self._store.items():
@@ -106,10 +115,14 @@ class MorkTable(object):
 
             rows.append(newRow)
 
-        self = MorkTable(rows)
+        # Start with an empty table if trunc or if there's no table currently
+        self = db.tables.get((namespace, oid))
+        if self is None or ast.trunc:
+            self = MorkTable()
 
-        if ast.trunc:
-            warnings.warn("ignoring table's 'truncated' attribute")
+        for row in rows:
+            self.addRow(row)
+
         if ast.meta:
             warnings.warn('ignoring meta-table')
 
@@ -131,6 +144,8 @@ class MorkRow(dict):
 
         self = MorkRow()
         for cell in ast.cells:
+            if cell.cut:
+                warnings.warn("ignoring cell's 'cut' attribute")
             (column, value) = db._inflateCell(cell)
             self[column] = value
 
@@ -153,12 +168,20 @@ class MorkRow(dict):
 
         return self
 
+def processMorkGroupAst(ast, db):
+    assert isinstance(ast, morkast.Group)
+
+    if not ast.commit:
+        return
+
+    for item in ast.items:
+        db.buildItem(item)
+
 class MorkDatabase(object):
     def __init__(self):
         self.dicts = {} # { 'namespace': MorkDict }
         self.tables = MorkTableStore()
         self.rows = MorkRowStore()
-        #self.groups = {}
 
         self.dicts['a'] = MorkDict()
         self.dicts['c'] = MorkDict()
@@ -221,7 +244,16 @@ class MorkDatabase(object):
         morkast.Dict:  MorkDict.fromAst,
         morkast.Row:   MorkRow.fromAst,
         morkast.Table: MorkTable.fromAst,
+        morkast.Group: processMorkGroupAst,
     }
+
+    def buildItem(self, ast):
+        builder = self._builder.get(ast.__class__)
+        if builder is None:
+            warnings.warn('skipping item of type %s' % ast.__class__)
+            return
+
+        builder(ast, self)
 
     @staticmethod
     def fromAst(ast):
@@ -230,12 +262,7 @@ class MorkDatabase(object):
         self = MorkDatabase()
 
         for item in ast.items:
-            builder = self._builder.get(item.__class__)
-            if builder is None:
-                warnings.warn('skipping item of type %s' % item.__class__)
-                continue
-
-            builder(item, self)
+            self.buildItem(item)
 
         return self
 
