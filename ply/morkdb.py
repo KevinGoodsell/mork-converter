@@ -111,6 +111,7 @@ class MorkTable(object):
                     rowNamespace = namespace
                 newRow = db.rows[rowNamespace, rowId]
             else:
+                # XXX This might be the place to check cut rows
                 newRow = MorkRow.fromAst(row, db, namespace)
 
             rows.append(newRow)
@@ -155,10 +156,11 @@ class MorkRow(dict):
             self = MorkRow()
 
         for cell in ast.cells:
-            if cell.cut:
-                warnings.warn("ignoring cell's 'cut' attribute")
             (column, value) = db._inflateCell(cell)
-            self[column] = value
+            if cell.cut:
+                self.pop(column, None)
+            else:
+                self[column] = value
 
         if ast.cut:
             warnings.warn("ignoring row's 'cut' attribute")
