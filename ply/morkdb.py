@@ -142,13 +142,6 @@ class MorkRow(dict):
     def fromAst(ast, db, defaultNamespace=None):
         assert isinstance(ast, morkast.Row)
 
-        self = MorkRow()
-        for cell in ast.cells:
-            if cell.cut:
-                warnings.warn("ignoring cell's 'cut' attribute")
-            (column, value) = db._inflateCell(cell)
-            self[column] = value
-
         # Get id and namespace
         (oid, namespace) = db._dissectId(ast.rowid)
         if namespace is None:
@@ -156,8 +149,17 @@ class MorkRow(dict):
 
         assert namespace is not None, 'no namespace found for row'
 
-        if ast.trunc:
-            warnings.warn("ignoring row's 'trucated' attribute")
+        # Start with an empty row if trunc or if there's no row currently
+        self = db.rows.get((namespace, oid))
+        if self is None or ast.trunc:
+            self = MorkRow()
+
+        for cell in ast.cells:
+            if cell.cut:
+                warnings.warn("ignoring cell's 'cut' attribute")
+            (column, value) = db._inflateCell(cell)
+            self[column] = value
+
         if ast.cut:
             warnings.warn("ignoring row's 'cut' attribute")
         if ast.meta:
@@ -249,9 +251,8 @@ class MorkDatabase(object):
 
     def buildItem(self, ast):
         builder = self._builder.get(ast.__class__)
-        if builder is None:
-            warnings.warn('skipping item of type %s' % ast.__class__)
-            return
+        assert builder is not None, ("unknown item with type '%s'" %
+            ast.__class__)
 
         builder(ast, self)
 
