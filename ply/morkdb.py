@@ -41,31 +41,13 @@ class MorkDict(dict):
         else:
             existing.update(cells)
 
-class _MorkStore(object):
+class _MorkStore(dict):
     def __init__(self):
-        # I think this will be sort of like { (namespace, id): morkObject }
-        self._store = {} # { 'namespace': { 'id': object } }
-
-    def __getitem__(self, key):
-        (namespace, oid) = key
-        return self._store[namespace][oid]
-
-    def __setitem__(self, key, value):
-        (namespace, oid) = key
-        self._store.setdefault(namespace, {})[oid] = value
-
-    def get(self, key, default=None):
-        result = default
-        (namespace, oid) = key
-        ns = self._store.get(namespace)
-        if ns:
-            result = ns.get(oid, default)
-        return result
+        dict.__init__(self) # { ('namespace', 'id'): object } }
 
     def items(self):
-        for (namespace, objs) in self._store.items():
-            for (oid, obj) in objs.items():
-                yield (namespace, oid, obj)
+        for ((namespace, oid), obj) in dict.items(self):
+            yield (namespace, oid, obj)
 
 class MorkTableStore(_MorkStore):
     pass
@@ -73,25 +55,19 @@ class MorkTableStore(_MorkStore):
 class MorkRowStore(_MorkStore):
     pass
 
-class MorkTable(object):
-    def __init__(self, rows=None):
-        if rows is None:
-            rows = []
-
-        self._rows = rows
+class MorkTable(MorkRowStore):
+    def __init__(self):
+        MorkRowStore.__init__(self)
 
     def columnNames(self):
         columns = set()
-        for row in self._rows:
+        for row in self.values():
             columns.update(row.columnNames())
 
         return columns
 
-    def addRow(self, row):
-        self._rows.append(row)
-
     def __iter__(self):
-        for row in self._rows:
+        for row in self.values():
             yield row
 
     @staticmethod
@@ -102,27 +78,32 @@ class MorkTable(object):
         (oid, namespace) = db._dissectId(ast.tableid)
         assert namespace is not None, 'no namespace found for table'
 
-        rows = []
-        for row in ast.rows:
-            # row could be ObjectId or Row
-            if isinstance(row, morkast.ObjectId):
-                (rowId, rowNamespace) = db._dissectId(row)
-                if rowNamespace is None:
-                    rowNamespace = namespace
-                newRow = db.rows[rowNamespace, rowId]
-            else:
-                # XXX This might be the place to check cut rows
-                newRow = MorkRow.fromAst(row, db, namespace)
-
-            rows.append(newRow)
-
         # Start with an empty table if trunc or if there's no table currently
         self = db.tables.get((namespace, oid))
         if self is None or ast.trunc:
             self = MorkTable()
 
-        for row in rows:
-            self.addRow(row)
+        for row in ast.rows:
+            # row could be morkast.ObjectId or morkast.Row
+            rowIdAst = row
+            cut = False
+            if isinstance(row, morkast.Row):
+                rowIdAst = row.rowid
+                cut = row.cut
+
+            (rowId, rowNamespace) = db._dissectId(rowIdAst)
+            if rowNamespace is None:
+                rowNamespace = namespace
+
+            if isinstance(row, morkast.Row):
+                newRow = MorkRow.fromAst(row, db, namespace)
+            else:
+                newRow = db.rows[rowNamespace, rowId]
+
+            if cut:
+                self.pop((rowNamespace, rowId), None)
+            else:
+                self[rowNamespace, rowId] = newRow
 
         if ast.meta:
             warnings.warn('ignoring meta-table')
@@ -162,8 +143,6 @@ class MorkRow(dict):
             else:
                 self[column] = value
 
-        if ast.cut:
-            warnings.warn("ignoring row's 'cut' attribute")
         if ast.meta:
             warnings.warn('ignoring meta-row')
 
