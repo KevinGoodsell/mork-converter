@@ -125,7 +125,6 @@ class MorkMetaTable(object):
         self = MorkMetaTable()
         db._readRows(ast.rows, tableNamespace, self.rows)
 
-        # XXX Look at refactoring conversion of ast cells to dict
         for cell in ast.cells:
             (column, value) = db._inflateCell(cell)
             self.cells[column] = value
