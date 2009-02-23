@@ -76,8 +76,10 @@ class MorkTable(MorkRowStore):
 
         # Start with an empty table if trunc or if there's no table currently
         self = db.tables.get((namespace, oid))
-        if self is None or ast.trunc:
+        if self is None:
             self = MorkTable()
+        elif ast.trunc:
+            self.clear()
 
         for row in ast.rows:
             # row could be morkast.ObjectId or morkast.Row
@@ -183,9 +185,10 @@ class MorkRow(dict):
 
         # Start with an empty row if trunc or if there's no row currently
         self = db.rows.get((namespace, oid))
-        # XXX This is wrong. A truncated row should not be replaced.
-        if self is None or ast.trunc:
+        if self is None:
             self = MorkRow()
+        elif ast.trunc:
+            self.clear()
 
         for cell in ast.cells:
             (column, value) = db._inflateCell(cell)
