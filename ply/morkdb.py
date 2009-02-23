@@ -81,27 +81,7 @@ class MorkTable(MorkRowStore):
         elif ast.trunc:
             self.clear()
 
-        for row in ast.rows:
-            # row could be morkast.ObjectId or morkast.Row
-            rowIdAst = row
-            cut = False
-            if isinstance(row, morkast.Row):
-                rowIdAst = row.rowid
-                cut = row.cut
-
-            (rowId, rowNamespace) = db._dissectId(rowIdAst)
-            if rowNamespace is None:
-                rowNamespace = namespace
-
-            if isinstance(row, morkast.Row):
-                newRow = MorkRow.fromAst(row, db, namespace)
-            else:
-                newRow = db.rows[rowNamespace, rowId]
-
-            if cut:
-                self.pop((rowNamespace, rowId), None)
-            else:
-                self[rowNamespace, rowId] = newRow
+        db._readRows(ast.rows, namespace, self)
 
         assert len(ast.meta) <= 1, 'multiple meta-tables'
         if ast.meta:
@@ -143,18 +123,7 @@ class MorkMetaTable(object):
         assert isinstance(ast, morkast.MetaTable)
 
         self = MorkMetaTable()
-        # XXX Refactor handling of rows
-        for row in ast.rows:
-            rowIdAst = row
-            if isinstance(row, morkast.Row):
-                rowIdAst = row.rowid
-                MorkRow.fromAst(row, db, tableNamespace)
-
-            (rowId, rowNamespace) = db._dissectId(rowIdAst)
-            if rowNamespace is None:
-                rowNamespace = tableNamespace
-
-            self.rows[rowNamespace, rowId] = db.rows[rowNamespace, rowId]
+        db._readRows(ast.rows, tableNamespace, self.rows)
 
         # XXX Look at refactoring conversion of ast cells to dict
         for cell in ast.cells:
@@ -276,6 +245,25 @@ class MorkDatabase(object):
 
         return (column, value)
 
+    def _readRows(self, rows, tableNamespace, rowDict):
+        for row in rows:
+            # Each row could be morkast.Row or morkast.ObjectId
+            rowIdAst = row
+            cut = False
+            if isinstance(row, morkast.Row):
+                rowIdAst = row.rowid
+                cut = row.cut
+                MorkRow.fromAst(row, self, tableNamespace)
+
+            (rowId, rowNamespace) = self._dissectId(rowIdAst)
+            if rowNamespace is None:
+                rowNamespace = tableNamespace
+
+            if cut:
+                rowDict.pop((rowNamespace, rowId), None)
+            else:
+                rowDict[rowNamespace, rowId] = self.rows[rowNamespace, rowId]
+
     # **** Database builder ****
 
     _builder = {
@@ -302,24 +290,3 @@ class MorkDatabase(object):
             self.buildItem(item)
 
         return self
-
-
-# Test
-import sys
-
-import morkyacc
-
-def main(args=None):
-    if args is None:
-        args = sys.argv[1:]
-
-    tree = morkyacc.parseFile(args[0])
-    db = MorkDatabase.fromAst(tree)
-
-    import pdb
-    pdb.set_trace()
-
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main())
