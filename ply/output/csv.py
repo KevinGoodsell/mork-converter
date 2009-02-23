@@ -16,22 +16,100 @@ def output(db, args):
     args = util.convertArgs(usage, args)
     return _outputHelper(db, **args)
 
+class _TableWriter(object):
+    def _newTable(self, namespace, oid):
+        raise NotImplementedError()
+
+    def _newMetaTable(self, namespace, oid):
+        raise NotImplementedError()
+
+    def writeTable(self, table, namespace, oid):
+        import morkdb
+        assert isinstance(table, morkdb.MorkTable)
+        f = self._newTable(namespace, oid)
+
+        headers = list(table.columnNames())
+        if len(headers) == 0:
+            return
+        headers.sort()
+        print >> f, _formatCsvRow(headers)
+
+        for row in table.values():
+            values = [row.get(header, '') for header in headers]
+            print >> f, _formatCsvRow(values)
+
+    def writeMetaTable(self, metatable, namespace, oid):
+        import morkdb
+        assert isinstance(metatable, morkdb.MorkMetaTable)
+        f = self._newMetaTable(namespace, oid)
+
+        headers = list(metatable.columnNames())
+        if len(headers) == 0:
+            return
+        headers.sort()
+        print >> f, _formatCsvRow(headers)
+
+        values = [metatable[header] for header in headers]
+        print >> f, _formatCsvRow(values)
+
+    def close(self):
+        pass
+
+class _SingleFileWriter(_TableWriter):
+    def __init__(self, outname):
+        _TableWriter.__init__(self)
+
+        self.fp = open(outname, 'w')
+
+    def _newTable(self, namespace, oid, prefix=''):
+        print >> self.fp, '-' * 70
+        print >> self.fp, '%sTABLE %s :: %s' % (prefix, namespace, oid)
+        print >> self.fp, '-' * 70
+        return self.fp
+
+    def _newMetaTable(self, namespace, oid):
+        return self._newTable(namespace, oid, 'META-')
+
+    def close(self):
+        if self.fp is not None:
+            self.fp.close()
+            self.fp = None
+
+class _MultiFileWriter(_TableWriter):
+    def __init__(self, dirname):
+        _TableWriter.__init__(self)
+
+        self.dirname = dirname
+        self.currentFile = None
+        os.mkdir(dirname)
+
+    def _newTable(self, namespace, oid, postfix=''):
+        self.close()
+        filename = '%s-%s%s' % (namespace, oid, postfix)
+        self.currentFile = open(os.path.join(self.dirname, filename), 'w')
+        return self.currentFile
+
+    def _newMetaTable(self, namespace, oid):
+        return self._newTable(namespace, oid, '-meta')
+
+    def close(self):
+        if self.currentFile is not None:
+            self.currentFile.close()
+            self.currentFile = None
+
 def _outputHelper(db, outname='csvout', singlefile=False):
     if singlefile:
-        f = open(outname, 'w')
+        writer = _SingleFileWriter(outname)
     else:
-        os.mkdir(outname)
+        writer = _MultiFileWriter(outname)
 
     for (namespace, oid, table) in db.tables.items():
-        if singlefile:
-            print >> f, '-' * 70
-            print >> f, 'TABLE %s :: %s' % (namespace, oid)
-            print >> f, '-' * 70
-        else:
-            filename = '%s-%s' % (namespace, oid)
-            f = open(os.path.join(outname, filename), 'w')
+        writer.writeTable(table, namespace, oid)
+        meta = db.metaTables.get((namespace, oid))
+        if meta is not None:
+            writer.writeMetaTable(meta, namespace, oid)
 
-        _writeCsv(f, table)
+    writer.close()
 
 _needsQuotes = re.compile(r'''
   [,\r\n"] # Characters that force double-quoting
@@ -50,20 +128,5 @@ def _formatCsvValue(value):
 
     return value
 
-def _writeCsv(f, table):
-    import morkdb
-
-    assert isinstance(table, morkdb.MorkTable)
-
-    headers = list(table.columnNames())
-    if len(headers) == 0:
-        return
-    headers.sort()
-
-    headerline = ','.join(_formatCsvValue(header) for header in headers)
-    print >> f, headerline
-
-    for row in table:
-        values = [row.get(header, '') for header in headers]
-        line = ','.join(_formatCsvValue(value) for value in values)
-        print >> f, line
+def _formatCsvRow(items):
+    return ','.join(_formatCsvValue(item) for item in items)

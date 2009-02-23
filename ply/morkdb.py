@@ -66,10 +66,6 @@ class MorkTable(MorkRowStore):
 
         return columns
 
-    def __iter__(self):
-        for row in self.values():
-            yield row
-
     @staticmethod
     def fromAst(ast, db):
         assert isinstance(ast, morkast.Table)
@@ -105,11 +101,65 @@ class MorkTable(MorkRowStore):
             else:
                 self[rowNamespace, rowId] = newRow
 
+        assert len(ast.meta) <= 1, 'multiple meta-tables'
         if ast.meta:
-            warnings.warn('ignoring meta-table')
+            MorkMetaTable.fromAst(ast.meta[0], db, namespace, oid)
 
         # Insert into table store
         db.tables[namespace, oid] = self
+
+        return self
+
+class MorkMetaTable(object):
+    # A meta-table is pretty much a set of cells, which makes it a lot like a
+    # row. It can also contain rows -- my guess is that the row should be
+    # flattened, so its cells are added to the other meta-table cells.
+    def __init__(self):
+        self.cells = {}
+        self.rows = MorkRowStore()
+
+    def columnNames(self):
+        columns = set(self.cells.keys())
+        for row in self.rows.values():
+            columns.update(row.keys())
+
+        return columns
+
+    def __getitem__(self, column):
+        # I doubt there's more than one row per meta-table
+        for row in self.rows.values():
+            if column in row:
+                return row[column]
+
+        if column in self.cells:
+            return self.cells[column]
+        else:
+            raise KeyError(repr(column))
+
+    @staticmethod
+    def fromAst(ast, db, tableNamespace, tableId):
+        assert isinstance(ast, morkast.MetaTable)
+
+        self = MorkMetaTable()
+        # XXX Refactor handling of rows
+        for row in ast.rows:
+            rowIdAst = row
+            if isinstance(row, morkast.Row):
+                rowIdAst = row.rowid
+                MorkRow.fromAst(row, db, tableNamespace)
+
+            (rowId, rowNamespace) = db._dissectId(rowIdAst)
+            if rowNamespace is None:
+                rowNamespace = tableNamespace
+
+            self.rows[rowNamespace, rowId] = db.rows[rowNamespace, rowId]
+
+        # XXX Look at refactoring conversion of ast cells to dict
+        for cell in ast.cells:
+            (column, value) = db._inflateCell(cell)
+            self.cells[column] = value
+
+        db.metaTables[tableNamespace, tableId] = self
 
         return self
 
@@ -133,6 +183,7 @@ class MorkRow(dict):
 
         # Start with an empty row if trunc or if there's no row currently
         self = db.rows.get((namespace, oid))
+        # XXX This is wrong. A truncated row should not be replaced.
         if self is None or ast.trunc:
             self = MorkRow()
 
@@ -164,6 +215,7 @@ class MorkDatabase(object):
     def __init__(self):
         self.dicts = {} # { 'namespace': MorkDict }
         self.tables = MorkTableStore()
+        self.metaTables = MorkTableStore()
         self.rows = MorkRowStore()
 
         self.dicts['a'] = MorkDict()
