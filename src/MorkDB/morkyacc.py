@@ -1,12 +1,23 @@
 import re
 import ply.yacc as yacc
+import warnings
 
 from MorkDB.morklex import tokens
 import MorkDB.morkast as morkast
 
 def p_mork_db(p):
-    'mork : MAGIC item_group_list'
-    p[0] = morkast.Database(p[2])
+    '''
+    mork : MAGIC item_group_list
+         | item_group_list
+    '''
+    if len(p) == 2:
+        # No magic found
+        warnings.warn('File may not be a supported mork version')
+        items = p[1]
+    else:
+        items = p[2]
+
+    p[0] = morkast.Database(items)
 
 def p_item_or_group(p):
     '''
