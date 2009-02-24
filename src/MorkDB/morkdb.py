@@ -1,7 +1,7 @@
 import warnings
 import re
 
-import morkast
+import MorkDB.morkast as morkast
 
 class MorkDict(dict):
     def __init__(self):

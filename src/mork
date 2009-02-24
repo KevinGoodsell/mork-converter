@@ -3,7 +3,7 @@
 import sys
 import getopt
 
-import output
+import MorkDB.output as output
 
 def usage(msg=None):
     if msg:
@@ -38,17 +38,17 @@ def splitFilterArgs(nameAndArgs):
     return (filterName, argDict)
 
 def printTokens(f):
-    import morklex
+    import MorkDB.morklex as morklex
     morklex.printTokens(f)
 
 def printSyntaxTree(f):
-    import morkyacc
+    import MorkDB.morkyacc as morkyacc
     tree = morkyacc.parseFile(f)
     print tree
 
 def filterFile(f, module, moduleArgs):
-    import morkdb
-    import morkyacc
+    import MorkDB.morkdb as morkdb
+    import MorkDB.morkyacc as morkyacc
 
     tree = morkyacc.parseFile(f)
     db = morkdb.MorkDatabase.fromAst(tree)

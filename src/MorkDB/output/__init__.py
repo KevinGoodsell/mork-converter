@@ -5,7 +5,7 @@ class BadFilter(StandardError):
     pass
 
 def getFilter(name):
-    moduleName = 'output.' + name
+    moduleName = 'MorkDB.output.' + name
     try:
         exec 'import ' + moduleName
     except ImportError:

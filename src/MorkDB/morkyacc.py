@@ -1,8 +1,8 @@
 import re
 import ply.yacc as yacc
 
-from morklex import tokens
-import morkast
+from MorkDB.morklex import tokens
+import MorkDB.morkast as morkast
 
 def p_mork_db(p):
     'mork : MAGIC item_group_list'

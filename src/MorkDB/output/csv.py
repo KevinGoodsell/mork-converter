@@ -1,7 +1,7 @@
 import re
 import os
 
-import output.util as util
+import MorkDB.output.util as util
 
 _MORK_OUTPUT_FILTER = True
 
@@ -24,7 +24,7 @@ class _TableWriter(object):
         raise NotImplementedError()
 
     def writeTable(self, table, namespace, oid):
-        import morkdb
+        import MorkDB.morkdb as morkdb
         assert isinstance(table, morkdb.MorkTable)
         f = self._newTable(namespace, oid)
 
@@ -39,7 +39,7 @@ class _TableWriter(object):
             print >> f, _formatCsvRow(values)
 
     def writeMetaTable(self, metatable, namespace, oid):
-        import morkdb
+        import MorkDB.morkdb as morkdb
         assert isinstance(metatable, morkdb.MorkMetaTable)
         f = self._newMetaTable(namespace, oid)
 
