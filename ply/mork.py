@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import getopt
 
@@ -66,7 +68,7 @@ def main(args=None):
     tokens = False
     syntax = False
     formatGiven = False
-    format = 'csv:singlefile'
+    format = 'xml'
 
     for (opt, val) in options:
         if opt in ('-h', '--help'):
