@@ -3,4 +3,3 @@
 * Missing a lot of exception handling.
 * Maybe add meta-table suppression option.
 * Maybe add row ID as a hidden column, optionally displayed.
-* Multi-file reading doesn't make sense and is probably broken.

@@ -9,7 +9,7 @@ def usage(msg=None):
     if msg:
         print >> sys.stderr, msg
     print >> sys.stderr, ('usage: %s [--tokens|--syntax|--format=<outformat>]'
-        ' [--help] [file ...]' % sys.argv[0])
+        ' [--help] [<file>]' % sys.argv[0])
     print >> sys.stderr, ('  <outformat> has the form'
         ' <filtername>[:arg1[=val1]...[:argN[=valN]]]')
     print >> sys.stderr, '  Available filters and options:'
@@ -87,25 +87,23 @@ def main(args=None):
         usage('choose one (or zero) of --tokens, --syntax, or --format')
         return 2
 
-    if len(arguments) == 0:
-        arguments = ['-']
-
     if not tokens and not syntax:
         (filterName, filterArgs) = splitFilterArgs(format)
         filterModule = output.getFilter(filterName)
 
-    for arg in arguments:
-        if arg == '-':
-            f = sys.stdin
-        else:
-            f = open(arg)
+    if len(arguments) == 0:
+        f = sys.stdin
+    else:
+        f = open(arguments[0])
 
-        if tokens:
-            printTokens(f)
-        elif syntax:
-            printSyntaxTree(f)
-        else:
-            filterFile(f, filterModule, filterArgs)
+    if tokens:
+        printTokens(f)
+    elif syntax:
+        printSyntaxTree(f)
+    else:
+        filterFile(f, filterModule, filterArgs)
+
+    return 0
 
 
 if __name__ == '__main__':
