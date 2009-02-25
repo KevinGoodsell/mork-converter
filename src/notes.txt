@@ -7,5 +7,4 @@
 Good things to add before public release:
 * README
 * Optimizations
-* Correct XML
 * Better help text (with defaults)

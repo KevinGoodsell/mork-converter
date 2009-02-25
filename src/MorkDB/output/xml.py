@@ -14,6 +14,7 @@ _indentStr = '    '
 
 def _outputHelper(db, outname='mork.xml'):
     f = open(outname, 'w')
+    print >> f, '<?xml version="1.0"?>'
     print >> f, '<morkxml>'
 
     for (namespace, oid, table) in db.tables.items():
