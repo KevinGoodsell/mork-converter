@@ -5,7 +5,7 @@
 * Maybe add row ID as a hidden column, optionally displayed.
 
 Good things to add before public release:
-* Version number
-* Python version checking
 * README
 * Optimizations
+* Correct XML
+* Better help text (with defaults)
