@@ -27,7 +27,7 @@ states = (
 
 # 'Special' tokens
 def t_MAGIC(t):
-    r'//\ <!--\ <mdb:mork:z\ v="1\.4"/>\ -->\r?$'
+    r'//\ <!--\ <mdb:mork:z\ v="1\.4"/>\ -->.*$'
     return t
 
 def t_COMMENT(t):
