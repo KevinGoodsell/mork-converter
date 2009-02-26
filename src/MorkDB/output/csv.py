@@ -6,7 +6,7 @@ import MorkDB.output.util as util
 _MORK_OUTPUT_FILTER = True
 
 usage = [
-    util.Argument('outname', 'Name to use for output directory (or file, if'
+    util.Argument('out', 'Name to use for output directory (or file, if'
         ' singlefile is used)'),
     util.Argument('singlefile', 'Output no a single file instead of one file'
         ' per table', util.convertBool),
@@ -97,11 +97,11 @@ class _MultiFileWriter(_TableWriter):
             self.currentFile.close()
             self.currentFile = None
 
-def _outputHelper(db, outname='csvout', singlefile=False):
+def _outputHelper(db, out='csvout', singlefile=False):
     if singlefile:
-        writer = _SingleFileWriter(outname)
+        writer = _SingleFileWriter(out)
     else:
-        writer = _MultiFileWriter(outname)
+        writer = _MultiFileWriter(out)
 
     for (namespace, oid, table) in db.tables.items():
         writer.writeTable(table, namespace, oid)

@@ -4,7 +4,9 @@
 minPythonVersion = (2, 4)
 import sys
 if sys.version_info < minPythonVersion:
-    print >> sys.stderr, 'This script requires python 2.4 or higher!'
+    strVersion = '.'.join([str(part) for part in minPythonVersion])
+    print >> sys.stderr, ('This script requires python %s or higher!'
+        % strVersion)
     sys.exit(1)
 
 # Done with version checking. Get on with real work.
@@ -26,12 +28,15 @@ def usage(msg=None):
         ' [--help] [<file>]' % sys.argv[0])
     print >> sys.stderr, ('  <outformat> has the form'
         ' <filtername>[:arg1[=val1]...[:argN[=valN]]]')
-    print >> sys.stderr, '  Available filters and options:'
+    print >> sys.stderr
+    print >> sys.stderr, 'Available filters and options:'
+    print >> sys.stderr
 
     for filtName, filtModule in output.iterFilters():
-        print >> sys.stderr, '    %s' % filtName
+        print >> sys.stderr, '%s' % filtName
         for (argName, argDescription) in filtModule.usage:
-            print >> sys.stderr, '      %s: %s' % (argName, argDescription)
+            print >> sys.stderr, '  %s: %s' % (argName, argDescription)
+        print >> sys.stderr
 
 def splitFilterArgs(nameAndArgs):
     pieces = nameAndArgs.split(':')

@@ -3,7 +3,7 @@ import MorkDB.output.util as util
 _MORK_OUTPUT_FILTER = True
 
 usage = [
-    util.Argument('outname', 'Name to use for output file'),
+    util.Argument('out', 'Name to use for output file'),
 ]
 
 def output(db, args):
@@ -12,8 +12,8 @@ def output(db, args):
 
 _indentStr = '    '
 
-def _outputHelper(db, outname='mork.xml'):
-    f = open(outname, 'w')
+def _outputHelper(db, out='mork.xml'):
+    f = open(out, 'w')
     print >> f, '<?xml version="1.0"?>'
     print >> f, '<morkxml>'
 
