@@ -5,9 +5,11 @@ import MorkDB.output.util as util
 
 _MORK_OUTPUT_FILTER = True
 
+description = 'Comma-Separated Values output filter'
+
 usage = [
     util.Argument('out', 'Name to use for output directory (or file, if'
-        ' singlefile is used)'),
+        ' singlefile is used, default: csvout)'),
     util.Argument('singlefile', 'Output no a single file instead of one file'
         ' per table', util.convertBool),
 ]

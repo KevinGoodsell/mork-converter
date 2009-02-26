@@ -2,8 +2,10 @@ import MorkDB.output.util as util
 
 _MORK_OUTPUT_FILTER = True
 
+description = 'Simple XML output filter'
+
 usage = [
-    util.Argument('out', 'Name to use for output file'),
+    util.Argument('out', 'Name to use for output file (default: mork.xml)'),
 ]
 
 def output(db, args):

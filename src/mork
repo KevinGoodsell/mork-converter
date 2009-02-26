@@ -25,7 +25,7 @@ def usage(msg=None):
     if msg:
         print >> sys.stderr, msg
     print >> sys.stderr, ('usage: %s [--tokens|--syntax|--format=<outformat>]'
-        ' [--help] [<file>]' % sys.argv[0])
+        ' [--help] [--version] [<file>]' % sys.argv[0])
     print >> sys.stderr, ('  <outformat> has the form'
         ' <filtername>[:arg1[=val1]...[:argN[=valN]]]')
     print >> sys.stderr
@@ -33,10 +33,19 @@ def usage(msg=None):
     print >> sys.stderr
 
     for filtName, filtModule in output.iterFilters():
-        print >> sys.stderr, '%s' % filtName
-        for (argName, argDescription) in filtModule.usage:
-            print >> sys.stderr, '  %s: %s' % (argName, argDescription)
-        print >> sys.stderr
+        filterUsage(filtName, filtModule)
+
+def filterUsage(name, module):
+    if module.description:
+        nameLine = '%s - %s' % (name, module.description)
+    else:
+        nameLine = name
+    print >> sys.stderr, nameLine
+
+    print >> sys.stderr, '  Arguments:'
+    for (argName, argDescription) in module.usage:
+        print >> sys.stderr, '    %s: %s' % (argName, argDescription)
+    print >> sys.stderr
 
 def splitFilterArgs(nameAndArgs):
     pieces = nameAndArgs.split(':')
