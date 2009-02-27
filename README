@@ -1,0 +1,117 @@
+Mork Converter
+
+Version 1.0
+
+February 26, 2009
+
+Kevin Goodsell
+
+Preliminary Info
+----------------
+This project began with a misunderstanding. I wanted to convert my
+Thunderbird mailboxes to a different format, and I mistakenly thought
+that this would require reading the Mork-formatted .msf files. It turns
+out that a .msf (mail summary file) file is only an index. I'm not sure
+how I missed this, but that's beside the point.
+
+There are a few existing tools to read (some) Mork files, but they fail
+to read .msf files. I started writing my own tool, partly to experiment
+with Python parsing using PLY (Python Lex-Yacc). In spite of my
+realization that I had little or no real use for this tool, I decided to
+continue working on it until it could be released in the hope that it
+might be useful to others.
+
+Contact
+-------
+If you find this useful or discover a problem with it, please let me
+know. It was an interesting project to work on, but I'll probably only
+update it if I hear that it's being used.
+
+Email:
+kevin-foss@omegacrash.net
+
+Prerequisites
+-------------
+* Python 2, version 2.4 or higher. Python 3 is not supported.
+* PLY (Python Lex-Yacc). Version 2.5 was used during development. Other
+  versions have not been tested.
+
+Quick Start
+-----------
+To read the Mork file history.dat and output an XML file called
+mork.xml, use:
+
+mork history.dat
+
+To do the same, but output to a file called history.xml, use:
+
+mork --format=xml:out=history.xml history.dat
+
+To output to a set of CSV (Comma-Separated Values) files, one for each
+table and meta-table in the Mork database, use:
+
+mork --format=csv history.dat
+
+This will write the output files into a directory called csvout. You can
+also write a single file with a header before each table by doing this:
+
+mork --format=csv:singlefile history.dat
+
+This will still use the name csvout, but it will be a file rather than a
+directory.
+
+For additional help, use:
+
+mork --help
+
+The --tokens and --syntax options are primarily for debugging.
+
+About Mork Files
+----------------
+Mork is a general-purpose text-based database format created for use in
+the Mozilla project. I know of four specific ways it has been used in
+Mozilla and related projects (Firefox, Thunderbird):
+
+* Browsing history
+* Form history
+* Address book
+* Mailbox index
+
+Unfortunately this format is rather convoluted and very difficult to
+read, making the data contained in the database practically inaccessible
+by non-Mozilla applications. Recently sqlite databases have replaced
+Mork databases for some uses, largely alleviating this problem.
+
+Mork represents data in tables. Tables are uniquely identified by a
+namespace and ID. Tables include a set of rows and metadata in the form
+of a 'meta-table'. Rows are likewise identified by a namespace and ID,
+and may also include metadata in the form of a 'meta-row', however I
+have not encountered any Mork files that make use of meta-rows. If this
+tool encounters a meta-row it will report a warning and otherwise ignore
+it. Row data is a set of key-value pairs where the keys are referred to
+as columns.
+
+The output from this tool depends on the output filter selected with the
+--format option, but will typically contain a set of tables
+corresponding to the tables in the Mork file, each identified by the
+table namespace and ID. Each table's meta-table is also included, and
+may contain information useful for interpreting the table contents.
+Meta-tables seem to always contain a 'k' field that identifies the
+'kind' of the table, and a 's' field that always seems to have the value
+'9'.
+
+Rows in a table are not uniform. Columns that appear in one row may not
+appear in others.
+
+Known Issues
+------------
+* The Mork documentation I've been able to find is not quite adequate,
+  so there's a significant amount of guess-work involved in the
+  translation.
+* Many errors are currently reported with Python tracebacks. This is not
+  very user-friendly.
+* Row IDs aren't included in the output (and aren't available to the
+  output filters even if a filter wanted to include them). These may not
+  be important, but could be useful for debugging.
+* The parsing is rather slow. This seems to be an inherent issue with
+  PLY.
