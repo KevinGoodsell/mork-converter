@@ -32,7 +32,7 @@ def usage(msg=None):
     print >> sys.stderr, 'Available filters and options:'
     print >> sys.stderr
 
-    for filtName, filtModule in output.iterFilters():
+    for (filtName, filtModule) in output.iterFilters():
         filterUsage(filtName, filtModule)
 
 def filterUsage(name, module):
