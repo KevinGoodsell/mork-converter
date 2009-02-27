@@ -36,33 +36,33 @@ Prerequisites
 * PLY (Python Lex-Yacc). Version 2.5 was used during development. Other
   versions have not been tested.
 
-Quick Start
+Basic Usage
 -----------
 To read the Mork file history.dat and output an XML file called
 mork.xml, use:
 
-mork history.dat
+  mork history.dat
 
 To do the same, but output to a file called history.xml, use:
 
-mork --format=xml:out=history.xml history.dat
+  mork --format=xml:out=history.xml history.dat
 
 To output to a set of CSV (Comma-Separated Values) files, one for each
 table and meta-table in the Mork database, use:
 
-mork --format=csv history.dat
+  mork --format=csv history.dat
 
 This will write the output files into a directory called csvout. You can
 also write a single file with a header before each table by doing this:
 
-mork --format=csv:singlefile history.dat
+  mork --format=csv:singlefile history.dat
 
 This will still use the name csvout, but it will be a file rather than a
 directory.
 
 For additional help, use:
 
-mork --help
+  mork --help
 
 The --tokens and --syntax options are primarily for debugging.
 
@@ -115,3 +115,13 @@ Known Issues
   be important, but could be useful for debugging.
 * The parsing is rather slow. This seems to be an inherent issue with
   PLY.
+* Some Mork files include data that appears to be encoded in UTF-16
+  mixed with ASCII or UTF-8 data. There's no indication (as far as I can
+  tell) when a field is UTF-16. This tool basically outputs ASCII, but
+  writes field data as-is, whether it's valid ASCII or not. As a result,
+  UTF-8 data comes out correctly, but UTF-16 looks like garbage. If the
+  UTF-16 characters are in the ASCII (or Latin-1) range, this produces
+  zero bytes between otherwise normal ASCII characters, and deleting the
+  zero bytes fixes the problem (essentially converting to UTF-8).
+  Unicode data outside outside this range (above U+00FF) would require
+  more sophisticated processing to make it look right.
