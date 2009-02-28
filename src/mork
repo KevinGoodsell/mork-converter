@@ -1,12 +1,14 @@
 #!/usr/bin/env python
+# Copyright (c) 2009 Kevin Goodsell
 
 # Do python version checking up front.
-minPythonVersion = (2, 4)
 import sys
+
+minPythonVersion = (2, 4)
 if sys.version_info < minPythonVersion:
     strVersion = '.'.join([str(part) for part in minPythonVersion])
-    print >> sys.stderr, ('This script requires python %s or higher!'
-        % strVersion)
+    print >> sys.stderr, ('This script requires python %s or higher!' %
+                          strVersion)
     sys.exit(1)
 
 # Done with version checking. Get on with real work.

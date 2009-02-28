@@ -1,3 +1,4 @@
+# Copyright (c) 2009 Kevin Goodsell
 import MorkDB.output.util as util
 
 _MORK_OUTPUT_FILTER = True

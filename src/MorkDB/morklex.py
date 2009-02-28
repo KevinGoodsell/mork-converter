@@ -1,3 +1,4 @@
+# Copyright (c) 2009 Kevin Goodsell
 import ply.lex as lex
 import re
 import sys
@@ -94,6 +95,3 @@ def printTokens(f):
         if not tok:
             break
         print tok
-
-if __name__ == '__main__':
-    lex.runmain()

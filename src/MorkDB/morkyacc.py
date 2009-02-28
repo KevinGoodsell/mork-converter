@@ -1,3 +1,4 @@
+# Copyright (c) 2009 Kevin Goodsell
 import re
 import ply.yacc as yacc
 import warnings

@@ -1,9 +1,6 @@
 Mork Converter
-
 Version 1.0
-
 February 26, 2009
-
 Kevin Goodsell
 
 Preliminary Info
@@ -20,6 +17,11 @@ with Python parsing using PLY (Python Lex-Yacc). In spite of my
 realization that I had little or no real use for this tool, I decided to
 continue working on it until it could be released in the hope that it
 might be useful to others.
+
+License
+-------
+This software is licensed under the MIT license. Read the LICENSE file
+for details.
 
 Contact
 -------

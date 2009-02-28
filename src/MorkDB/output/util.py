@@ -1,3 +1,4 @@
+# Copyright (c) 2009 Kevin Goodsell
 
 class ArgumentError(ValueError):
     pass

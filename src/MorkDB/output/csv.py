@@ -1,3 +1,4 @@
+# Copyright (c) 2009 Kevin Goodsell
 import re
 import os
 
@@ -9,9 +10,9 @@ description = 'Comma-Separated Values output filter'
 
 usage = [
     util.Argument('out', 'Name to use for output directory (or file, if'
-        ' singlefile is used, default: csvout)'),
+                  ' singlefile is used, default: csvout)'),
     util.Argument('singlefile', 'Output no a single file instead of one file'
-        ' per table', util.convertBool),
+                  ' per table', util.convertBool),
 ]
 
 def output(db, args):

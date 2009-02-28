@@ -1,3 +1,4 @@
+# Copyright (c) 2009 Kevin Goodsell
 import re
 import ply.yacc as yacc
 
@@ -85,7 +86,7 @@ class Row(MorkAst):
 
     def __repr__(self):
         return 'Row(%r, %r, %r, %r, %r)' % (self.rowid, self.cells, self.meta,
-            self.trunc, self.cut)
+                                            self.trunc, self.cut)
 
     def __str__(self):
         members = 'trunc: %s\ncut: %s\n%s\n%s' % (self.trunc, self.cut,
@@ -117,7 +118,7 @@ class Table(MorkAst):
 
     def __repr__(self):
         return 'Table(%r, %r, %r, %r)' % (self.tableid, self.rows, self.meta,
-            self.trunc)
+                                          self.trunc)
 
     def __str__(self):
         members = 'trunc: %s\n%s\n%s' % (self.trunc,
@@ -140,7 +141,7 @@ class MetaTable(MorkAst):
 
     def __str__(self):
         members = '%s\n%s' % (self.indentList('cells', self.cells),
-            self.indentList('rows', self.rows))
+                              self.indentList('rows', self.rows))
         return 'MetaTable:\n%s' % self.indent(members)
 
 class Cell(MorkAst):

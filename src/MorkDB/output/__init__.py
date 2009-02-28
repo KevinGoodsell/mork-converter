@@ -1,3 +1,4 @@
+# Copyright (c) 2009 Kevin Goodsell
 import sys
 import os
 

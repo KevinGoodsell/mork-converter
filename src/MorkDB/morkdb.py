@@ -1,3 +1,4 @@
+# Copyright (c) 2009 Kevin Goodsell
 import warnings
 import re
 
@@ -275,7 +276,7 @@ class MorkDatabase(object):
     def buildItem(self, ast):
         builder = self._builder.get(ast.__class__)
         assert builder is not None, ("unknown item with type '%s'" %
-            ast.__class__)
+                                     ast.__class__)
 
         builder(ast, self)
 
