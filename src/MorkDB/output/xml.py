@@ -1,15 +1,37 @@
 # Copyright (c) 2009 Kevin Goodsell
+
+# Output filter for writing Mork databases in XML format. This is also a basic
+# introduction to writing output filters using the tools in output.util.
 import MorkDB.output.util as util
 
+# REQUIRED: All output filters should include _MORK_OUTPUT_FILTER. The value
+# doesn't matter, just the presence of the variable.
 _MORK_OUTPUT_FILTER = True
 
+# REQUIRED: All output filters should have a description. It is displayed in
+# the help output, unless it evaluates as false.
 description = 'Simple XML output filter'
 
+# REQUIRED: All output filters have a usage. This is a sequence of items,
+# and each item is a sequence of two items. Effectively this is a sequence of
+# (argumentName, argumentDescription) pairs. util.Argument behaves as a
+# sequence of two items, but can also have a 'converter', which is used in
+# util.convertArgs to convert the argument text (a string) to whatever type
+# is desired. When not supplied, the argument just remains a string.
 usage = [
     util.Argument('out', 'Name to use for output file (default: mork.xml)'),
 ]
 
+# REQUIRED: The output function does the real work. Its arguments are a
+# MorkDatabase instance and a dict of arguments with argument names for the
+# keys and argument text for the values.
 def output(db, args):
+    # convertArgs uses the names in 'usage' to check the validity of the
+    # arguments and uses the converters in 'usage' to convert argument text
+    # to more useful types.
+    #
+    # This does NOT check for required arguments. If there are required args,
+    # check for them specifically.
     args = util.convertArgs(usage, args)
     return _outputHelper(db, **args)
 
