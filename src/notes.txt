@@ -1,9 +1,0 @@
-* morkParser.cpp is a good reference.
-* Might want a custom warning class for unimplemented mork features.
-* Missing a lot of exception handling.
-* Maybe add meta-table suppression option.
-* Maybe add row ID as a hidden column, optionally displayed.
-
-Good things to add before public release:
-* README
-* Copyright and license
