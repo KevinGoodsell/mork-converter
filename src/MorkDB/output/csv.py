@@ -35,10 +35,11 @@ class _TableWriter(object):
         if len(headers) == 0:
             return
         headers.sort()
-        print >> f, _formatCsvRow(headers)
+        print >> f, _formatCsvRow(['namespace', 'id'] + headers)
 
-        for row in table.values():
+        for (rowNamespace, rowId, row) in table.items():
             values = [row.get(header, '') for header in headers]
+            values = [rowNamespace, rowId] + values
             print >> f, _formatCsvRow(values)
 
     def writeMetaTable(self, metatable, namespace, oid):
