@@ -112,8 +112,6 @@ Known Issues
   translation.
 * Many errors are currently reported with Python tracebacks. This is not
   very user-friendly.
-* Row IDs aren't included in the output. These may not be important, but
-  could be useful for debugging.
 * The parsing is rather slow. This seems to be an inherent issue with
   PLY.
 * Some Mork files include data that appears to be encoded in UTF-16
