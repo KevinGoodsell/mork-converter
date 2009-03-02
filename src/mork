@@ -117,13 +117,14 @@ def main(args=None):
         (options, arguments) = getopt.getopt(args, 'hv',
             ['tokens', 'syntax', 'help', 'format=', 'version', 'filter='])
     except getopt.GetoptError, e:
-        usage(str(e))
+        usage('Error: ' + str(e))
         return 2
 
     tokens = False
     syntax = False
-    formatGiven = False
+    convert = False
     format = 'xml'
+    formatCount = 0
     filters = []
 
     for (opt, val) in options:
@@ -138,15 +139,20 @@ def main(args=None):
         elif opt == '--syntax':
             syntax = True
         elif opt == '--format':
-            formatGiven = True
+            convert = True
+            formatCount += 1
             format = val
         elif opt == '--filter':
+            convert = True
             filters.append(val)
 
-    # XXX This won't quite cover it
-    mutualyExclusive = [opt for opt in (tokens, syntax, formatGiven) if opt]
+    if formatCount > 1:
+        usage('Error: --format may only be given once')
+        return 2
+
+    mutualyExclusive = [opt for opt in (tokens, syntax, convert) if opt]
     if len(mutualyExclusive) > 1:
-        usage('choose one (or zero) of --tokens, --syntax, or --format')
+        usage('Error: invalid combination of arguments')
         return 2
 
     if len(arguments) == 0:
