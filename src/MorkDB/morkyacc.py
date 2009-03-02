@@ -1,4 +1,8 @@
-# Copyright (c) 2009 Kevin Goodsell
+'''
+Copyright (c) 2009 Kevin Goodsell
+
+morkyacc.py -- PLY-based parser for Mork database files.
+'''
 import re
 import ply.yacc as yacc
 import warnings

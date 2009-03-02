@@ -1,4 +1,10 @@
-# Copyright (c) 2009 Kevin Goodsell
+'''
+Copyright (c) 2009 Kevin Goodsell
+
+morkast.py -- Classes for building an Abstract Syntax Tree from a parsed Mork
+file.
+'''
+
 import re
 import ply.yacc as yacc
 

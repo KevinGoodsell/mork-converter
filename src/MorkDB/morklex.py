@@ -1,4 +1,8 @@
-# Copyright (c) 2009 Kevin Goodsell
+'''
+Copyright (c) 2009 Kevin Goodsell
+
+morklex.py -- PLY-based lexical analyzer for Mork database files.
+'''
 import ply.lex as lex
 import re
 import sys

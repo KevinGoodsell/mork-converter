@@ -1,4 +1,9 @@
-# Copyright (c) 2009 Kevin Goodsell
+'''
+Copyright (c) 2009 Kevin Goodsell
+
+morkdb.py -- classes for representing data from a Mork database, and functions
+for building them from Abstract Syntax Trees.
+'''
 import warnings
 import re
 

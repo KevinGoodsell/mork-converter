@@ -1,4 +1,9 @@
-# Copyright (c) 2009 Kevin Goodsell
+'''
+Copyright (c) 2009 Kevin Goodsell
+
+moduleTools.py -- tools for dynamically finding and importing modules to
+create a plugin-like interface.
+'''
 import sys
 import os
 

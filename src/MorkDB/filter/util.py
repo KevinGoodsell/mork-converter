@@ -1,4 +1,8 @@
-# Copyright (c) 2009 Kevin Goodsell
+'''
+Copyright (c) 2009 Kevin Goodsell
+
+util.py -- Some basic tools for writing filters for Mork databases.
+'''
 
 class ArgumentError(ValueError):
     pass
