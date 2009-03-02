@@ -27,11 +27,17 @@ def showVersion():
 def usage(msg=None):
     if msg:
         print >> sys.stderr, msg
-    # XXX Missing database filters
-    print >> sys.stderr, ('usage: %s [--tokens|--syntax|--format=<outformat>]'
-        ' [--help] [--version] [<file>]' % sys.argv[0])
-    print >> sys.stderr, ('  <outformat> has the form'
+
+    print >> sys.stderr,  'usage: %s (-h|--help)' % sys.argv[0]
+    print >> sys.stderr,  '       %s (-v|--version)' % sys.argv[0]
+    print >> sys.stderr, ('       %s [--filter=<filterArg> ...] '
+                          '[--format=<filterArg>] [<file>]' % sys.argv[0])
+    print >> sys.stderr, ('       <filterArg> has the form'
         ' <filtername>[:arg1[=val1]...[:argN[=valN]]]')
+    print >> sys.stderr
+    print >> sys.stderr, ('for debugging only, print lexical tokens or '
+                          'abstract syntax:')
+    print >> sys.stderr, '       %s (--tokens|--syntax) [<file>]' % sys.argv[0]
     print >> sys.stderr
 
     print >> sys.stderr, 'Available database filters and options:'
@@ -51,10 +57,11 @@ def filterUsage(name, module):
         nameLine = name
     print >> sys.stderr, nameLine
 
-    # XXX Make this nicer for filters without args
-    print >> sys.stderr, '  Arguments:'
-    for (argName, argDescription) in module.usage:
-        print >> sys.stderr, '    %s: %s' % (argName, argDescription)
+    arguments = '\n'.join('    %s: %s' % (name, desc) for (name, desc) in
+                          module.usage)
+    if arguments:
+        print >> sys.stderr, '  Arguments:'
+        print >> sys.stderr, arguments
     print >> sys.stderr
 
 def splitFilterArgs(nameAndArgs):
