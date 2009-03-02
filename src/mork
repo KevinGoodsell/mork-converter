@@ -34,7 +34,7 @@ def usage(msg=None):
     print >> sys.stderr, 'Available filters and options:'
     print >> sys.stderr
 
-    for (filtName, filtModule) in output.iterFilters():
+    for (filtName, filtModule) in output.filters.iterModules():
         filterUsage(filtName, filtModule)
 
 def filterUsage(name, module):
@@ -122,7 +122,7 @@ def main(args=None):
 
     if not tokens and not syntax:
         (filterName, filterArgs) = splitFilterArgs(format)
-        filterModule = output.getFilter(filterName)
+        filterModule = output.filters.getModule(filterName)
 
     if len(arguments) == 0:
         f = sys.stdin
