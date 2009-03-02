@@ -16,6 +16,7 @@ if sys.version_info < minPythonVersion:
 import getopt
 
 import MorkDB.filter.output as output
+import MorkDB.filter.database as dbfilter
 
 version = '1.0'
 
@@ -26,14 +27,20 @@ def showVersion():
 def usage(msg=None):
     if msg:
         print >> sys.stderr, msg
+    # XXX Missing database filters
     print >> sys.stderr, ('usage: %s [--tokens|--syntax|--format=<outformat>]'
         ' [--help] [--version] [<file>]' % sys.argv[0])
     print >> sys.stderr, ('  <outformat> has the form'
         ' <filtername>[:arg1[=val1]...[:argN[=valN]]]')
     print >> sys.stderr
-    print >> sys.stderr, 'Available filters and options:'
-    print >> sys.stderr
 
+    print >> sys.stderr, 'Available database filters and options:'
+    print >> sys.stderr
+    for (filtName, filtModule) in dbfilter.filters.iterModules():
+        filterUsage(filtName, filtModule)
+
+    print >> sys.stderr, 'Available output filters and options:'
+    print >> sys.stderr
     for (filtName, filtModule) in output.filters.iterModules():
         filterUsage(filtName, filtModule)
 
@@ -44,6 +51,7 @@ def filterUsage(name, module):
         nameLine = name
     print >> sys.stderr, nameLine
 
+    # XXX Make this nicer for filters without args
     print >> sys.stderr, '  Arguments:'
     for (argName, argDescription) in module.usage:
         print >> sys.stderr, '    %s: %s' % (argName, argDescription)
@@ -76,13 +84,23 @@ def printSyntaxTree(f):
     tree = morkyacc.parseFile(f)
     print tree
 
-def filterFile(f, module, moduleArgs):
+def processDatabase(f, filters, format):
     import MorkDB.morkdb as morkdb
     import MorkDB.morkyacc as morkyacc
 
     tree = morkyacc.parseFile(f)
     db = morkdb.MorkDatabase.fromAst(tree)
-    module.output(db, moduleArgs)
+
+    # Apply db filters
+    for filt in filters:
+        (filtName, args) = splitFilterArgs(filt)
+        filtModule = dbfilter.filters.getModule(filtName)
+        filtModule.filter(db, args)
+
+    # Apply output filter
+    (filtName, args) = splitFilterArgs(format)
+    outputModule = output.filters.getModule(filtName)
+    outputModule.output(db, args)
 
 def main(args=None):
     if args is None:
@@ -90,7 +108,7 @@ def main(args=None):
 
     try:
         (options, arguments) = getopt.getopt(args, 'hv',
-            ['tokens', 'syntax', 'help', 'format=', 'version'])
+            ['tokens', 'syntax', 'help', 'format=', 'version', 'filter='])
     except getopt.GetoptError, e:
         usage(str(e))
         return 2
@@ -99,6 +117,7 @@ def main(args=None):
     syntax = False
     formatGiven = False
     format = 'xml'
+    filters = []
 
     for (opt, val) in options:
         if opt in ('-h', '--help'):
@@ -114,15 +133,14 @@ def main(args=None):
         elif opt == '--format':
             formatGiven = True
             format = val
+        elif opt == '--filter':
+            filters.append(val)
 
+    # XXX This won't quite cover it
     mutualyExclusive = [opt for opt in (tokens, syntax, formatGiven) if opt]
     if len(mutualyExclusive) > 1:
         usage('choose one (or zero) of --tokens, --syntax, or --format')
         return 2
-
-    if not tokens and not syntax:
-        (filterName, filterArgs) = splitFilterArgs(format)
-        filterModule = output.filters.getModule(filterName)
 
     if len(arguments) == 0:
         f = sys.stdin
@@ -134,7 +152,7 @@ def main(args=None):
     elif syntax:
         printSyntaxTree(f)
     else:
-        filterFile(f, filterModule, filterArgs)
+        processDatabase(f, filters, format)
 
     return 0
 
