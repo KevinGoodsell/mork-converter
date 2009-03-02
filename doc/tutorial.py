@@ -3,7 +3,7 @@
 # Tutorial for Writing Output Filters
 #
 # This is a tutorial in the form of a real output filter module -- you can
-# actually drop it into the MorkDB/output directory and use it as-is.
+# actually drop it into the MorkDB/filter/output directory and use it as-is.
 #
 # The util module contains some handy but optional things. It also contains
 # the ArgumentError exception class, used to indicate problems with the filter
