@@ -9,7 +9,7 @@
 # the ArgumentError exception class, used to indicate problems with the filter
 # arguments. You don't even need this import if you don't want to signal any
 # argument errors, but it's certainly good to have.
-import MorkDB.output.util as util
+import MorkDB.filter.util as util
 #
 # All output filters require four items: _MORK_OUTPUT_FILTER, description,
 # usage, and output. Descriptions and examples of each follow.

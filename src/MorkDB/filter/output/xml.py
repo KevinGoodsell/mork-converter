@@ -2,7 +2,7 @@
 
 # Output filter for writing Mork databases in XML format. This is also a basic
 # introduction to writing output filters using the tools in output.util.
-import MorkDB.output.util as util
+import MorkDB.filter.util as util
 
 # REQUIRED: All output filters should include _MORK_OUTPUT_FILTER. The value
 # doesn't matter, just the presence of the variable.

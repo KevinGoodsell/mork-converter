@@ -2,7 +2,7 @@
 import re
 import os
 
-import MorkDB.output.util as util
+import MorkDB.filter.util as util
 
 _MORK_OUTPUT_FILTER = True
 

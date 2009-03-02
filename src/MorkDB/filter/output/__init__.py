@@ -9,4 +9,4 @@ class _OutputFilterPool(modtools.ModulePool):
             raise modtools.BadModule('not a valid output filter: %s' % name)
 
 filters = _OutputFilterPool(os.path.dirname(os.path.abspath(__file__)),
-                            'MorkDB.output')
+                            'MorkDB.filter.output')

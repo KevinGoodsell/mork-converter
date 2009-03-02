@@ -15,7 +15,7 @@ if sys.version_info < minPythonVersion:
 
 import getopt
 
-import MorkDB.output as output
+import MorkDB.filter.output as output
 
 version = '1.0'
 
