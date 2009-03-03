@@ -131,6 +131,13 @@ on the command line. Available database filters include 'utf16', which
 converts UTF-16 fields to UTF-8, and 'times' which converts fields that
 represent times and dates to standard time formats.
 
+There is also a 'nometa' filter, which removes meta-tables from the
+database. This might come in handy for cases where the meta-tables do
+not contain useful information, and just get in the way of interpreting
+the output. Note, however, that the meta-tables might be necessary for
+other filters to function properly. Because of this, the 'nometa' filter
+should probably be the last filter applied.
+
 Applying a filter more than once will probably not work correctly.
 
 Known Issues
