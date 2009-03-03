@@ -1,5 +1,7 @@
 # Copyright (c) 2009 Kevin Goodsell
 
+import MorkDB.filter.util as util
+
 _MORK_DATABASE_FILTER = True
 
 usage = []
@@ -21,6 +23,10 @@ _byteOrderEncodings = {
 }
 
 def filter(db, args):
+    args = util.convertArgs(usage, args)
+    _filterHelper(db, **args)
+
+def _filterHelper(db):
     for (tableNamespace, tableId, table) in db.tables.items():
         # Set the default encoding, then check for a specific ByteOrder in
         # the meta-table.
