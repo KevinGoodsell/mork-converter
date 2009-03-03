@@ -66,8 +66,6 @@ For additional help, use:
 
   mork --help
 
-The --tokens and --syntax options are primarily for debugging.
-
 About Mork Files
 ----------------
 Mork is a general-purpose text-based database format created for use in
@@ -103,7 +101,37 @@ Meta-tables seem to always contain a 'k' field that identifies the
 '9'.
 
 Rows in a table are not uniform. Columns that appear in one row may not
-appear in others.
+appear in others. This makes the output a little odd, especially in
+formats like CSV that require uniform rows. The result is that all
+columns appear in the table header, and each row will have empty fields
+for the columns that are not actually present in the row.
+
+Each row is also identified by a namespace and ID, which typically shows
+up in the output (as row attributes in XML and as extra columns in CSV).
+This will probably not be useful other than for debugging, so you can
+usually ignore it.
+
+Filters
+-------
+This converter includes a basic framework for "filters", which are used
+for writing output (output filters) and for tweaking the database prior
+to output (database filters).
+
+Available filters are shown in the --help output. Information on how to
+write filters can be found in the doc/ subdirectory.
+
+Output filters are specified with the --format option, and only one
+output filter may be provided on the command line. Available output
+filters include 'xml' and 'csv', for writing XML and CSV files,
+respectively.
+
+Database filters are specified with the --filter option. You may specify
+as many as you'd like, and they are applied in the order they are given
+on the command line. Available database filters include 'utf16', which
+converts UTF-16 fields to UTF-8, and 'times' which converts fields that
+represent times and dates to standard time formats.
+
+Applying a filter more than once will probably not work correctly.
 
 Known Issues
 ------------
@@ -116,11 +144,13 @@ Known Issues
   PLY.
 * Some Mork files include data that appears to be encoded in UTF-16
   mixed with ASCII or UTF-8 data. There's no indication (as far as I can
-  tell) when a field is UTF-16. This tool basically outputs ASCII, but
-  writes field data as-is, whether it's valid ASCII or not. As a result,
-  UTF-8 data comes out correctly, but UTF-16 looks like garbage. If the
-  UTF-16 characters are in the ASCII (or Latin-1) range, this produces
-  zero bytes between otherwise normal ASCII characters, and deleting the
-  zero bytes fixes the problem (essentially converting to UTF-8).
-  Unicode data outside outside this range (above U+00FF) would require
-  more sophisticated processing to make it look right.
+  tell) when a field is UTF-16. The 'utf16' filter attempts to correct
+  this problem, but only applies to fields that are explicitly mentioned
+  in the filter source. This list may be incomplete, causing some fields
+  to be left in UTF-16.
+* A similar warning applies for the 'times' filter: the fields to be
+  converted have to be explicitly given in the filter source. In
+  addition, I haven't verified the correctness of the resulting dates.
+  It's possible that the fields in the Mork file don't represent times
+  in the way that I think they do, as "UNIX time": seconds (or some
+  other small time unit) since the epoch at January 1, 1970.
