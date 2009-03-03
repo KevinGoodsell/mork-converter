@@ -21,7 +21,7 @@ def _convertText(text, format, base=10, divisor=1):
 
     return time.strftime(format, t)
 
-def _convertSeconds(text, format)
+def _convertSeconds(text, format):
     return _convertText(text, format)
 
 def _convertHexSeconds(text, format):
