@@ -100,8 +100,9 @@ class MorkTable(MorkRowStore):
 
 class MorkMetaTable(object):
     # A meta-table is pretty much a set of cells, which makes it a lot like a
-    # row. It can also contain rows -- my guess is that the row should be
-    # flattened, so its cells are added to the other meta-table cells.
+    # row. It can also contain rows -- my guess is that there can only be one
+    # row, and that the row cells are added to the meta-table cells. Parts of
+    # this implementation reflect this view.
     def __init__(self):
         self.cells = {}
         self.rows = MorkRowStore()

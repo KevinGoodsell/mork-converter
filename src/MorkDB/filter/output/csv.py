@@ -26,35 +26,51 @@ class _TableWriter(object):
     def _newMetaTable(self, namespace, oid):
         raise NotImplementedError()
 
+    def _writeRows(self, f, rows, headers):
+        for (rowNamespace, rowId, row) in rows.items():
+            values = [row.get(header, '') for header in headers]
+            values = [rowNamespace, rowId] + values
+            print >> f, _formatCsvRow(values)
+
     def writeTable(self, table, namespace, oid):
         import MorkDB.morkdb as morkdb
         assert isinstance(table, morkdb.MorkTable)
         f = self._newTable(namespace, oid)
 
-        headers = list(table.columnNames())
-        if len(headers) == 0:
+        if len(table) == 0:
             return
+        headers = list(table.columnNames())
         headers.sort()
         print >> f, _formatCsvRow(['namespace', 'id'] + headers)
 
-        for (rowNamespace, rowId, row) in table.items():
-            values = [row.get(header, '') for header in headers]
-            values = [rowNamespace, rowId] + values
-            print >> f, _formatCsvRow(values)
+        self._writeRows(f, table, headers)
 
     def writeMetaTable(self, metatable, namespace, oid):
         import MorkDB.morkdb as morkdb
         assert isinstance(metatable, morkdb.MorkMetaTable)
         f = self._newMetaTable(namespace, oid)
 
-        headers = list(metatable.columnNames())
-        if len(headers) == 0:
+        if len(metatable.cells) + len(metatable.rows) == 0:
             return
-        headers.sort()
-        print >> f, _formatCsvRow(headers)
 
-        values = [metatable[header] for header in headers]
-        print >> f, _formatCsvRow(values)
+        if len(metatable.rows) == 0:
+            extraHeaders = []
+            extraValues = []
+        else:
+            extraHeaders = ['namespace', 'id']
+            extraValues = ['', '']
+
+        # Header line
+        headers = list(metatable.columnNames())
+        headers.sort()
+        print >> f, _formatCsvRow(extraHeaders + headers)
+
+        # Output cells
+        values = [metatable.cells.get(header, '') for header in headers]
+        print >> f, _formatCsvRow(extraValues + values)
+
+        # Output rows
+        self._writeRows(f, metatable.rows, headers)
 
     def close(self):
         pass

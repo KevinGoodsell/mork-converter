@@ -66,9 +66,11 @@ def _writeMetaTable(f, meta, indent):
     indentStr = _indentStr * indent
     print >> f, '%s<metatable>' % indentStr
 
-    for column in meta.columnNames():
-        value = meta[column]
+    for (column, value) in meta.cells.items():
         _writeCell(f, column, value, indent + 1)
+
+    for (namespace, oid, row) in meta.rows.items():
+        _writeRow(f, namespace, oid, row, indent + 1)
 
     print >> f, '%s</metatable>' % indentStr
 
