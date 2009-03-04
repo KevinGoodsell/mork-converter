@@ -1,0 +1,20 @@
+There are two types of filters:
+
+Output filters are used to write output. This determines the output
+format and location. These filters can be found in
+src/MorkDB/filter/output.
+
+Database filters do translation and tweaking of databases prior to
+output. These filters can be found in src/MorkDB/filter/database.
+
+The file tutorial.py is a tutorial for writing an output filter. Read it
+in a text editor. The xml.py output filter also has a lot of comments
+and serves as a decent tutorial itself.
+
+Database filters don't have any explicit documentation, but they are
+very similar to output filters. The only differences are in the names of
+the required elements -- instead of a _MORK_OUTPUT_FILTER variable to
+identify the filter, database filters have a _MORK_DATABASE_FILTER
+variable. Instead of a function called output(), database filters have a
+function called filter(). I know, I shouldn't have used the name of an
+existing built-in function for this.
