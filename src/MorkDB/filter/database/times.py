@@ -46,6 +46,10 @@ _tableTimeFields = {
         'MRUTime'    : _convertSeconds,
     },
 
+    'ns:msg:db:row:scope:folders:all' : {
+        'MRUTime' : _convertSeconds,
+    },
+
     'ns:msg:db:row:scope:msgs:all' : {
         'date' : _convertHexSeconds,
     },
