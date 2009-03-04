@@ -32,11 +32,11 @@ states = (
 
 # 'Special' tokens
 def t_MAGIC(t):
-    r'//\ <!--\ <mdb:mork:z\ v="1\.4"/>\ -->.*$'
+    r'//\ <!--\ <mdb:mork:z\ v="1\.4"/>\ -->[^\r\n]*'
     return t
 
 def t_COMMENT(t):
-    r'//.*$'
+    r'//[^\r\n]*'
     pass
 
 # Common tokens
@@ -60,8 +60,11 @@ def t_cell_VALUE(t):
     ( [^)\\]    # Anything that's not \ or )
     | \\[)\\$]  # Basic escapes
     | \\\r?\n   # Line continuation
+    | \\\r      # Line continuation for Macs
     )* '''
     newlines = t.value.count('\n')
+    if newlines == 0:
+        newlines = t.value.count('\r')
     t.lexer.lineno += newlines
     t.value = t.value[1:]
     return t
@@ -81,6 +84,10 @@ literals = '<>[]{}:-^'
 def t_ANY_newline(t):
     r'(\r?\n)+'
     t.lexer.lineno += t.value.count('\n')
+
+def t_ANY_mac_newline(t):
+    r'\r+'
+    t.lexer.lineno += len(t.value)
 
 def t_ANY_error(t):
     print >> sys.stderr, "Lexing error at line %d, next chars: %r" % (

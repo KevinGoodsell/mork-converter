@@ -224,8 +224,8 @@ class MorkDatabase(object):
         return (oid.objectid, namespace)
 
     _unescapeMap = {
-        r'\)': ')', r'\\': '\\', r'\$': '$', # basic escapes
-        '\\\r\n': '', '\\\n': '',            # line continuation
+        r'\)': ')', r'\\': '\\', r'\$': '$',  # basic escapes
+        '\\\r\n': '', '\\\n': '', '\\\r': '', # line continuation
     }
     def _translateEscape(self, match):
         text = match.group()
