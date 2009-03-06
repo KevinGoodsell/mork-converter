@@ -254,11 +254,10 @@ def inputMork (data):
     pTable      = re.compile(r'\{-?(\d+):\^(..)\s*\{\(k\^(..):c\)\(s=9u?\)\s*(.*?)\}\s*(.+?)\}')
     pRow        = re.compile(r'(-?)\s*\[(.+?)((\(.+?\)\s*)*)\]')
 
-    pTranBegin  = re.compile(r'@\$\$\{.+?\{@')
-    pTranEnd    = re.compile(r'@\$\$\}.+?\}@')
+    pTranBegin  = re.compile(r'@\$\$\{.+?\{\@')
+    pTranEnd    = re.compile(r'@\$\$\}.+?\}\@')
 
     # Escape all '%)>}]' characters within () cells
-    # XXX This is probably broken.
     data = pCell.sub(escapeData, data)
 
     # Iterate through the data
@@ -297,7 +296,6 @@ def inputMork (data):
         # Parse a table
         match = pTable.match(sub)
         if match:
-            # XXX Let's not use group numbers
             id = match.group(1) + ':' + match.group(2)
 
             try:
@@ -356,7 +354,6 @@ def inputMork (data):
         print >>stderr, "ERROR: syntax error while parsing MORK file"
         print >>stderr, "context[%d]: %s" % (index, sub[:40])
         index += 1
-        match = None
 
     # Return the database
     return db
