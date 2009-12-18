@@ -4,6 +4,9 @@ https://developer.mozilla.org/En/Mork_Structure
 Simple, incomplete description:
 http://www-archive.mozilla.org/mailnews/arch/mork/primer.txt
 
+Grammar:
+http://www-archive.mozilla.org/mailnews/arch/mork/grammar.txt
+
 Source:
 http://mxr.mozilla.org/mozilla/source/db/mork/src/
 
