@@ -253,22 +253,32 @@ class MorkDatabase(object):
 
     def _readRows(self, rows, tableNamespace, rowDict):
         for row in rows:
-            # Each row could be morkast.Row or morkast.ObjectId
-            rowIdAst = row
-            cut = False
-            if isinstance(row, morkast.Row):
+            # Each row could be morkast.Row, morkast.RowUpdate or
+            # morkast.ObjectId
+            update = '+'
+            if isinstance(row, morkast.RowUpdate):
+                update = row.method
+                row = row.obj
+
+            if isinstance(row, morkast.ObjectId):
+                rowIdAst = row
+            elif isinstance(row, morkast.Row):
                 rowIdAst = row.rowid
-                cut = row.cut
                 MorkRow.fromAst(row, self, tableNamespace)
+            else:
+                raise StandardError('Bad row type: %s' % type(row))
 
             (rowId, rowNamespace) = self._dissectId(rowIdAst)
             if rowNamespace is None:
                 rowNamespace = tableNamespace
 
-            if cut:
+            if update == '+':
+                rowDict[rowNamespace, rowId] = self.rows[rowNamespace, rowId]
+            elif update == '-':
                 rowDict.pop((rowNamespace, rowId), None)
             else:
-                rowDict[rowNamespace, rowId] = self.rows[rowNamespace, rowId]
+                raise NotImplementedError('Unhandled row update type: %r' %
+                                          update)
 
     # **** Database builder ****
 

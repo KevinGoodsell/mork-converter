@@ -117,14 +117,22 @@ def p_row(p):
 
     p[0] = morkast.Row(objid, inner['cells'], inner['meta'], trunc = trunc)
 
-def p_update_row(p):
+def p_gereral_row(p):
     '''
-    update_row : row
-               | '-' row
+    general_row : row
+                | object_id
+    '''
+    p[0] = p[1]
+
+def p_row_update(p):
+    '''
+    row_update : general_row
+               | '+' general_row
+               | '-' general_row
+               | '!' general_row
     '''
     if len(p) == 3:
-        p[2].cut = True
-        p[0] = p[2]
+        p[0] = morkast.RowUpdate(p[2], p[1])
     else:
         p[0] = p[1]
 
@@ -152,13 +160,6 @@ def p_meta_row(p):
     '''
     p[0] = morkast.MetaRow(p[2])
 
-def p_gereral_row(p):
-    '''
-    general_row : update_row
-                | object_id
-    '''
-    p[0] = p[1]
-
 def p_table(p):
     '''
     table : '{' object_id table_inner '}'
@@ -176,7 +177,7 @@ def p_table(p):
 def p_table_inner_row(p):
     '''
     table_inner :
-                | table_inner general_row
+                | table_inner row_update
     '''
     if len(p) == 1:
         p[0] = { 'rows': [], 'meta': [] }

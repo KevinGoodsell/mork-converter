@@ -78,7 +78,7 @@ class MetaDict(Dict):
         return self.indentList('MetaDict', self.cells)
 
 class Row(MorkAst):
-    def __init__(self, rowid, cells=None, meta=None, trunc=False, cut=False):
+    def __init__(self, rowid, cells=None, meta=None, trunc=False):
         if cells is None:
             cells = []
         if meta is None:
@@ -88,14 +88,13 @@ class Row(MorkAst):
         self.cells = cells
         self.meta = meta
         self.trunc = trunc
-        self.cut = cut
 
     def __repr__(self):
-        return 'Row(%r, %r, %r, %r, %r)' % (self.rowid, self.cells, self.meta,
-                                            self.trunc, self.cut)
+        return 'Row(%r, %r, %r, %r)' % (self.rowid, self.cells, self.meta,
+                                        self.trunc)
 
     def __str__(self):
-        members = 'trunc: %s\ncut: %s\n%s\n%s' % (self.trunc, self.cut,
+        members = 'trunc: %s\n%s\n%s' % (self.trunc,
             self.indentList('meta', self.meta),
             self.indentList('cells', self.cells))
         return 'Row %s:\n%s' % (self.rowid, self.indent(members))
@@ -109,6 +108,18 @@ class MetaRow(Row):
 
     def __str__(self):
         return 'MetaRow:\n%s' % self.indentList('cells', self.cells)
+
+class RowUpdate(MorkAst):
+    def __init__(self, obj, method=''):
+        self.obj = obj
+        self.method = method
+
+    def __repr__(self):
+        return 'RowUpdate(%r, %r)' % (self.obj, self.method)
+
+    def __str__(self):
+        members = 'method: %r\nobj: %s' % (self.method, self.obj)
+        return 'RowUpdate:\n%s' % self.indent(members)
 
 class Table(MorkAst):
     def __init__(self, tableid, rows=None, meta=None, trunc=False):
