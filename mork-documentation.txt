@@ -1,0 +1,10 @@
+Pretty thorough description, but the accuracy is questionable:
+https://developer.mozilla.org/En/Mork_Structure
+
+Simple, incomplete description:
+http://www-archive.mozilla.org/mailnews/arch/mork/primer.txt
+
+Source:
+http://mxr.mozilla.org/mozilla/source/db/mork/src/
+
+Other versions might be in different source repositories.
