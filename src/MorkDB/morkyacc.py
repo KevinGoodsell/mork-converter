@@ -69,7 +69,7 @@ def p_group(p):
     if m is None:
         raise ValueError('no ID found in group token: %s' % p[1])
 
-    commit = p[1].find('~abort~') == -1
+    commit = p[3].find('~') == -1
 
     p[0] = morkast.Group(m.group('id'), p[2], commit)
 

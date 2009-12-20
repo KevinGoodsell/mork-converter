@@ -73,7 +73,10 @@ def t_cell_VALUE(t):
 # Wierd group stuff
 t_GROUPSTART =  r'@\$\$\{[0-9a-fA-F]+\{@'
 t_GROUPCOMMIT = r'@\$\$\}[0-9a-fA-F]+\}@'
-t_GROUPABORT =  r'@\$\$\}~abort~[0-9a-fA-F]+\}@'
+# According to documentation, group aborts look like this:
+#   '@$$}~abort~' objid '}@'
+# But according to the code, aborts are expected to simply be '@$$}~~}@'.
+t_GROUPABORT =  r'@\$\$\}(~abort~[0-9a-fA-F]+|~~)\}@'
 
 # Special rules
 
