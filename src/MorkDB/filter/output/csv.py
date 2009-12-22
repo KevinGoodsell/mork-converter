@@ -27,7 +27,7 @@ class _TableWriter(object):
         raise NotImplementedError()
 
     def _writeRows(self, f, rows, headers):
-        for (rowNamespace, rowId, row) in rows.items():
+        for (rowNamespace, rowId, row) in rows:
             values = [row.get(header, '') for header in headers]
             values = [rowNamespace, rowId] + values
             print >> f, _formatCsvRow(values)

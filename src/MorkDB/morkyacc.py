@@ -129,12 +129,17 @@ def p_row_update(p):
     row_update : general_row
                | '+' general_row
                | '-' general_row
-               | '!' general_row
     '''
     if len(p) == 3:
         p[0] = morkast.RowUpdate(p[2], p[1])
     else:
         p[0] = p[1]
+
+def p_row_move(p):
+    '''
+    row_update : object_id '!' LITERAL
+    '''
+    p[0] = morkast.RowMove(p[1], int(p[3], 16))
 
 def p_row_inner_cell(p):
     '''

@@ -121,6 +121,18 @@ class RowUpdate(MorkAst):
         members = 'method: %r\nobj: %s' % (self.method, self.obj)
         return 'RowUpdate:\n%s' % self.indent(members)
 
+class RowMove(MorkAst):
+    def __init__(self, rowid, position):
+        self.rowid = rowid
+        self.position = position
+
+    def __repr__(self):
+        return 'RowMove(%r, %#x)' % (self.rowid, self.position)
+
+    def __str__(self):
+        members = 'rowid: %r\nposition: %#x' % (self.rowid, self.position)
+        return 'RowMove:\n%s' % self.indent(members)
+
 class Table(MorkAst):
     def __init__(self, tableid, rows=None, meta=None, trunc=False):
         if rows is None:

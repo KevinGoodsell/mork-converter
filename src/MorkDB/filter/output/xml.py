@@ -54,7 +54,7 @@ def _writeTable(f, namespace, oid, table, meta=None, indent=1):
     print >> f, '%s<table namespace=%s id=%s>' % (indentStr,
         _formatAttribute(namespace), _formatAttribute(oid))
 
-    for (rowNamespace, rowId, row) in table.items():
+    for (rowNamespace, rowId, row) in table:
         _writeRow(f, rowNamespace, rowId, row, indent + 1)
 
     if meta is not None:
@@ -69,7 +69,7 @@ def _writeMetaTable(f, meta, indent):
     for (column, value) in meta.cells.items():
         _writeCell(f, column, value, indent + 1)
 
-    for (namespace, oid, row) in meta.rows.items():
+    for (namespace, oid, row) in meta.rows:
         _writeRow(f, namespace, oid, row, indent + 1)
 
     print >> f, '%s</metatable>' % indentStr

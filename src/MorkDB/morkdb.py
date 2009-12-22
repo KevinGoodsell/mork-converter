@@ -61,13 +61,51 @@ class MorkTableStore(_MorkStore):
 class MorkRowStore(_MorkStore):
     pass
 
-class MorkTable(MorkRowStore):
+class MorkRowList(object):
     def __init__(self):
-        MorkRowStore.__init__(self)
+        self.rows = [] # [ ('namespace', 'id', MorkRow) ]
+
+    def clear(self):
+        del self.rows[:]
+
+    def append(self, namespace, rowid, row):
+        self.rows.append((namespace, rowid, row))
+
+    def index(self, namespace, rowid):
+        for (i, (ns, rid, row)) in enumerate(self.rows):
+            if ns == namespace and rid == rowid:
+                return i
+
+        raise ValueError('row (%s, %s) not found in table' % (namespace,
+                                                              rowid))
+
+    def moveRow(self, namespace, rowid, newPos):
+        pos = self.index(namespace, rowid)
+
+        if newPos >= len(self.rows):
+            warning.warn('during row move, newPos is outside of table range')
+            newPos = len(self.rows) - 1
+
+        item = self.rows[pos]
+        if pos < newPos:
+            self.rows[pos:newPos+1] = self.rows[pos+1:newPos+1] + [item]
+        else:
+            self.rows[newPos:pos+1] = [item] + self.rows[newPos:pos]
+
+    def removeRow(self, namespace, rowid):
+        i = self.index(namespace, rowid)
+        del self.rows[i]
+
+    def __iter__(self):
+        return iter(self.rows)
+
+class MorkTable(MorkRowList):
+    def __init__(self):
+        MorkRowList.__init__(self)
 
     def columnNames(self):
         columns = set()
-        for row in self.values():
+        for (namespace, rowid, row) in self.rows:
             columns.update(row.columnNames())
 
         return columns
@@ -105,18 +143,18 @@ class MorkMetaTable(object):
     # this implementation reflect this view.
     def __init__(self):
         self.cells = {}
-        self.rows = MorkRowStore()
+        self.rows = MorkRowList()
 
     def columnNames(self):
         columns = set(self.cells.keys())
-        for row in self.rows.values():
+        for (ns, rowid, row) in self.rows:
             columns.update(row.keys())
 
         return columns
 
     def __getitem__(self, column):
         # I doubt there's more than one row per meta-table
-        for row in self.rows.values():
+        for (ns, rowid, row) in self.rows:
             if column in row:
                 return row[column]
 
@@ -251,12 +289,21 @@ class MorkDatabase(object):
 
         return (column, value)
 
-    def _readRows(self, rows, tableNamespace, rowDict):
+    # XXX refactor
+    def _readRows(self, rows, tableNamespace, rowList):
         for row in rows:
-            # Each row could be morkast.Row, morkast.RowUpdate or
-            # morkast.ObjectId
+            # Each row could be morkast.Row, morkast.RowUpdate,
+            # morkast.RowMove, or morkast.ObjectId
             update = '+'
-            if isinstance(row, morkast.RowUpdate):
+            if isinstance(row, morkast.RowMove):
+                # Need namespace and rowid
+                (rowId, rowNamespace) = self._dissectId(row.rowid)
+                if rowNamespace is None:
+                    rowNamespace = tableNamespace
+
+                rowList.moveRow(rowNamespace, rowId, row.position)
+                continue
+            elif isinstance(row, morkast.RowUpdate):
                 update = row.method
                 row = row.obj
 
@@ -273,9 +320,10 @@ class MorkDatabase(object):
                 rowNamespace = tableNamespace
 
             if update == '+':
-                rowDict[rowNamespace, rowId] = self.rows[rowNamespace, rowId]
+                rowList.append(rowNamespace, rowId,
+                               self.rows[rowNamespace, rowId])
             elif update == '-':
-                rowDict.pop((rowNamespace, rowId), None)
+                rowList.removeRow(rowNamespace, rowId)
             else:
                 raise NotImplementedError('Unhandled row update type: %r' %
                                           update)
