@@ -1,0 +1,116 @@
+Mork File Format Description
+Kevin Goodsell
+Sun, 20 Dec 2009 12:18:19 -0800
+
+1. Logical Structure
+
+Mork files logically consist of zero or more Tables. Each table consists
+of zero or more rows and optional metadata in the form of a Meta-Table.
+Each row consists of zero or more Cells and optional metadata in the
+form of a Meta-Row. Each cell is a Column-Value pair.
+
+This makes Mork Tables structurally similar to a spreadsheet or an HTML
+table, with rows and columns, and entries appearing in the cells formed
+by the intersection of a row and column. One important difference is
+that the Columns are not necessarily the same from one row to the next.
+A Mork Row may include arbitrary Columns.
+
+While the basic structure of the data is fairly simple, the Mork format
+itself is confusing, all but impossible to decode by hand, and poorly
+documented. The documentation that exists seems to contradict the
+Mozilla implementation of Mork 1.4 (which seems to be the only version
+to ever actually be used -- web searches turn up 0 hits for Mork files
+with any other version number).
+
+2. File Layout
+
+2.1 Encoding
+
+Mork files are text, and appear to be limited to ASCII characters.
+However, most if not all example files I've looked at include this:
+
+// (f=iso-8859-1)
+
+Which appears to identify a text encoding for some part of the file. The
+double-slashes indicate that this is a comment, so it's not clear if it
+should affect parsing or not (comments generally don't).
+
+Mork files can indicate end-of-line using several conventions. According
+to the documentation (XXX cite this), any of the combinations 0x0A, 0x0D,
+0x0A0D, and 0x0D0A are allowed. This covers the three common conventions
+(Unix, DOS/Windows, and Macintosh) and the uncommon 'newline carriage
+return'.
+
+2.2 Syntax Elements
+
+2.2.1 Comments and Magic
+
+Mork files can include comments using C++ comment syntax. Two forward
+slashes indicate the beginning of a comment which continues to the end
+of the line. It's important to note however, that this syntax is only
+considered a comment when it appears outside of a Cell (XXX check this).
+
+Mork files begin with the following "magic" identifier in the form of a
+comment:
+
+// <!-- <mdb:mork:z v="1.4"/> -->
+
+The 1.4 would of course be different for other Mork versions (though no
+other versions seem to exist in the wild).
+
+2.2.2 Dictionaries
+
+Mork Dictionaries or "Dicts" are used to define numerical aliases for
+strings (meaning Columns and Values). This is simply a file size
+optimization and does not add anything functional. It does however add
+substantial complexity to the files.
+
+Dicts are delimited with "angle brackets" (less-than and greater-than
+symbols) and contain simple Cells, and optionally a Meta-Dict. Cell
+Columns in Dicts are alway hexadecimal IDs and always greater than 7F
+(XXX verify). Values are arbitrary. The IDs are later used as
+substitutes for the corresponding Values when they are needed in
+non-Dict Cells.
+
+Example:
+
+<(80=arbitrary text)(81=http//example.com)
+(8C=(Parens are allowed, but a closing paren needs to be escaped.\))>
+
+In this example, note that the '//' does not introduce a comment, and a
+backslash character is used as an escape character to allow a closing
+parenthesis to appear in the Value.
+
+2.2.3 Cells
+
+Cells are delimited by parentheses and are used in several places in
+Mork with slightly different meanings. They are crucial parts of Rows
+and Dicts, and also appear in all of the Meta-types. They are basically
+a type of key-value pair, though the meaning of the key depends on the
+context, and the representation can vary slightly.
+
+The simple Cells that appear in Dicts have the form '(' hex-id '='
+string ')'. This simply makes the hex ID available to use as a
+substitute for the string.
+
+Outside of Dicts, Cells have a more general form. 
+
+2.2.4 Rows
+
+2.2.5 Tables
+
+2.2.6 Meta-Dicts, Meta-Tables, and Meta-Rows
+
+2.2.7 Groups (AKA Transactions)
+
+3. Character Escaping
+
+4. Interpreting Mork
+
+4.1 Multiple Dicts
+
+4.2 Object Namespaces
+
+4.3 Meta-Data
+
+5. Application-Specific Notes
