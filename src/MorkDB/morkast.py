@@ -6,7 +6,6 @@ file.
 '''
 
 import re
-import ply.yacc as yacc
 
 class MorkAst(object):
     @staticmethod
@@ -193,7 +192,7 @@ class ObjectId(MorkAst):
 
     def __init__(self, objectid, scope=None):
         if self._validator.match(objectid) is None:
-            raise yacc.SyntaxError
+            raise SyntaxError
 
         self.objectid = objectid
         self.scope = scope
