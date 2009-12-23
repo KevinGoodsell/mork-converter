@@ -190,10 +190,7 @@ class MorkRow(dict):
         assert isinstance(ast, morkast.Row)
 
         # Get id and namespace
-        (oid, namespace) = db._dissectId(ast.rowid)
-        if namespace is None:
-            namespace = defaultNamespace
-
+        (oid, namespace) = db._dissectId(ast.rowid, defaultNamespace)
         assert namespace is not None, 'no namespace found for row'
 
         # Start with an empty row if trunc or if there's no row currently
@@ -242,13 +239,11 @@ class MorkDatabase(object):
     def _dictDeref(self, objref, defaultNamespace='c'):
         assert isinstance(objref, morkast.ObjectRef)
 
-        (oid, namespace) = self._dissectId(objref.obj)
-        if namespace is None:
-            namespace = defaultNamespace
+        (oid, namespace) = self._dissectId(objref.obj, defaultNamespace)
 
         return self.dicts[namespace][oid]
 
-    def _dissectId(self, oid):
+    def _dissectId(self, oid, defaultNamespace=None):
         '''
         Return ('objectId', 'namespace') or ('objectId', None) if the
         namespace cannot be determined.
@@ -258,6 +253,8 @@ class MorkDatabase(object):
         namespace = oid.scope
         if isinstance(namespace, morkast.ObjectRef):
             namespace = self._dictDeref(namespace)
+        elif namespace is None:
+            namespace = defaultNamespace
 
         return (oid.objectid, namespace)
 
@@ -289,21 +286,19 @@ class MorkDatabase(object):
 
         return (column, value)
 
-    # XXX refactor
     def _readRows(self, rows, tableNamespace, rowList):
         for row in rows:
             # Each row could be morkast.Row, morkast.RowUpdate,
             # morkast.RowMove, or morkast.ObjectId
-            update = '+'
             if isinstance(row, morkast.RowMove):
-                # Need namespace and rowid
-                (rowId, rowNamespace) = self._dissectId(row.rowid)
-                if rowNamespace is None:
-                    rowNamespace = tableNamespace
+                (rowId, rowNamespace) = self._dissectId(row.rowid,
+                                                        tableNamespace)
 
                 rowList.moveRow(rowNamespace, rowId, row.position)
                 continue
-            elif isinstance(row, morkast.RowUpdate):
+
+            update = '+'
+            if isinstance(row, morkast.RowUpdate):
                 update = row.method
                 row = row.obj
 
@@ -315,9 +310,7 @@ class MorkDatabase(object):
             else:
                 raise StandardError('Bad row type: %s' % type(row))
 
-            (rowId, rowNamespace) = self._dissectId(rowIdAst)
-            if rowNamespace is None:
-                rowNamespace = tableNamespace
+            (rowId, rowNamespace) = self._dissectId(rowIdAst, tableNamespace)
 
             if update == '+':
                 rowList.append(rowNamespace, rowId,
