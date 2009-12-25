@@ -49,13 +49,13 @@ class Group(MorkAst):
         return 'Group %s:\n%s' % (self.groupid, self.indent(members))
 
 class Dict(MorkAst):
-    def __init__(self, cells=None, meta=None):
-        if cells is None:
-            cells = []
+    def __init__(self, aliases=None, meta=None):
+        if aliases is None:
+            aliases = []
         if meta is None:
             meta = []
 
-        self.cells = cells
+        self.aliases = aliases
         self.meta = meta
 
     def __repr__(self):
@@ -66,9 +66,12 @@ class Dict(MorkAst):
             self.indentList('cells', self.cells))
         return 'Dict:\n%s' % self.indent(members)
 
-class MetaDict(Dict):
+class MetaDict(MorkAst):
     def __init__(self, cells=None):
-        Dict.__init__(self, cells)
+        if cells is None:
+            cells = []
+
+        self.cells = cells
 
     def __repr__(self):
         return 'MetaDict(%r)' % self.cells
@@ -171,6 +174,17 @@ class MetaTable(MorkAst):
         members = '%s\n%s' % (self.indentList('cells', self.cells),
                               self.indentList('rows', self.rows))
         return 'MetaTable:\n%s' % self.indent(members)
+
+class Alias(MorkAst):
+    def __init__(self, key, value):
+        self.key = key
+        self.value = value
+
+    def __repr__(self):
+        return 'Alias(%r, %r)' % (self.key, self.value)
+
+    def __str__(self):
+        return 'Alias: %s = %s' % (self.key, self.value)
 
 class Cell(MorkAst):
     def __init__(self, column, value, cut=False):

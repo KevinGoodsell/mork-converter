@@ -24,12 +24,10 @@ class MorkDict(dict):
     def fromAst(ast, db):
         assert isinstance(ast, morkast.Dict)
 
-        # Create a MorkDict from ast.cells
-        cells = MorkDict()
-        for cell in ast.cells:
-            cells[cell.column] = db._unescape(cell.value)
-            # 'cut' doesn't seem to have any meaning in a dict
-            assert not cell.cut, "found a 'cut' cell in a dict"
+        # Create a MorkDict from ast.aliases
+        aliases = MorkDict()
+        for alias in ast.aliases:
+            aliases[alias.key] = db._unescape(alias.value)
 
         # Find the namespace (if any) in ast.meta
         namespace = 'a'
@@ -43,9 +41,9 @@ class MorkDict(dict):
 
         existing = db.dicts.get(namespace)
         if existing is None:
-            db.dicts[namespace] = cells
+            db.dicts[namespace] = aliases
         else:
-            existing.update(cells)
+            existing.update(aliases)
 
 class _MorkStore(dict):
     def __init__(self):

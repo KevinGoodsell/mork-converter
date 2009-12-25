@@ -87,7 +87,7 @@ def p_dict_inner_alias(p):
     if len(p) == 1:
         p[0] = morkast.Dict()
     else:
-        p[1].cells.append(p[2])
+        p[1].aliases.append(p[2])
         p[0] = p[1]
 
 def p_dict_inner_meta(p):
@@ -101,7 +101,7 @@ def p_alias(p):
     '''
     alias : LPAREN HEX VALUE RPAREN
     '''
-    p[0] = morkast.Cell(p[2], p[3])
+    p[0] = morkast.Alias(p[2], p[3])
 
 def p_meta_dict(p):
     '''
