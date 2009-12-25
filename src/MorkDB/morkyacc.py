@@ -75,14 +75,14 @@ def p_group(p):
 
 def p_dict(p):
     '''
-    dict : '<' dict_inner '>'
+    dict : LANGLE dict_inner RANGLE
     '''
     p[0] = p[2]
 
-def p_dict_inner_cell(p):
+def p_dict_inner_alias(p):
     '''
     dict_inner :
-               | dict_inner cell
+               | dict_inner alias
     '''
     if len(p) == 1:
         p[0] = morkast.Dict()
@@ -97,9 +97,15 @@ def p_dict_inner_meta(p):
     p[1].meta.append(p[2])
     p[0] = p[1]
 
+def p_alias(p):
+    '''
+    alias : LPAREN HEX VALUE RPAREN
+    '''
+    p[0] = morkast.Cell(p[2], p[3])
+
 def p_meta_dict(p):
     '''
-    meta_dict : '<' cell_list '>'
+    meta_dict : LANGLE cell_list RANGLE
     '''
     p[0] = morkast.MetaDict(p[2])
 
@@ -137,7 +143,7 @@ def p_row_update(p):
 
 def p_row_move(p):
     '''
-    row_update : object_id '!' LITERAL
+    row_update : object_id '!' HEX
     '''
     p[0] = morkast.RowMove(p[1], int(p[3], 16))
 
@@ -245,7 +251,7 @@ def p_cell(p):
 
 def p_cell_column(p):
     '''
-    cell_column : LITERAL
+    cell_column : NAME
                 | object_reference
     '''
     p[0] = p[1]
@@ -259,8 +265,8 @@ def p_cell_value(p):
 
 def p_object_reference(p):
     '''
-    object_reference : '^' LITERAL
-                     | '^' LITERAL ':' LITERAL
+    object_reference : CARET HEX
+                     | CARET HEX COLON NAME
     '''
     if len(p) == 3:
         obj = morkast.ObjectId(p[2])
@@ -271,8 +277,8 @@ def p_object_reference(p):
 
 def p_object_id(p):
     '''
-    object_id : LITERAL
-              | LITERAL ':' LITERAL
+    object_id : HEX
+              | HEX COLON NAME
     '''
     if len(p) == 2:
         p[0] = morkast.ObjectId(p[1])
@@ -281,7 +287,7 @@ def p_object_id(p):
 
 def p_object_id_refscope(p):
     '''
-    object_id : LITERAL ':' object_reference
+    object_id : HEX COLON object_reference
     '''
     p[0] = morkast.ObjectId(p[1], p[3])
 

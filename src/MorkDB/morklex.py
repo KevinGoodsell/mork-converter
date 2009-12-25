@@ -12,10 +12,17 @@ tokens = (
     'MAGIC',
     #'COMMENT',
 
-    # Common tokens
-    'LITERAL',
+    # Dict tokens
+    'LANGLE',
+    'RANGLE',
 
-    # Cell tokens
+    # Common tokens
+    'HEX',
+    'NAME',
+    'CARET',
+    'COLON',
+
+    # Cell/Alias tokens
     'LPAREN',
     'RPAREN',
     'VALUE',
@@ -26,8 +33,27 @@ tokens = (
     'GROUPABORT',
 )
 
+# These tokens can be ambiguous:
+# HEX, NAME
+# COLON, NAME
+# VALUE and almost any other token
+
+# Cells are by far the trickiest part of all this.
+#
+# "Cells" can be divided into dict aliases and (meta/row) cells.
+# Alias is: '(' hex '=' value ')'
+# Cell is: '(' ( '^' mid | name ) ( '^' mid | '=' value ) ')'
+# where mid is: hex | hex ':' name | hex ':^' hex
+
 states = (
+    # dict and metadict are necessary just to distinguish cells from
+    # aliases -- in a dict it's an alias, unless it's in a metadict.
+    ('dict', 'exclusive'),
+    ('metadict', 'exclusive'),
+    ('alias', 'exclusive'),
     ('cell', 'exclusive'),
+    ('name', 'exclusive'), # name or object reference
+    ('id', 'exclusive'),
 )
 
 # 'Special' tokens
@@ -35,28 +61,50 @@ def t_MAGIC(t):
     r'//\ <!--\ <mdb:mork:z\ v="1\.4"/>\ -->[^\r\n]*'
     return t
 
-def t_COMMENT(t):
+def t_dict_metadict_INITIAL_COMMENT(t):
     r'//[^\r\n]*'
     pass
 
-# Common tokens
-def t_ANY_LITERAL(t):
-    r'[a-zA-Z_0-9]+' # XXX Not really accurate
+# Dict tokens
+def t_LANGLE(t):
+    r'<'
+    t.lexer.push_state('dict')
     return t
 
-# Cell tokens
-def t_LPAREN(t):
+def t_dict_LPAREN(t):
+    r'\('
+    t.lexer.push_state('alias')
+    return t
+
+def t_dict_LANGLE(t):
+    r'<'
+    t.lexer.push_state('metadict')
+    return t
+
+def t_dict_metadict_RANGLE(t):
+    r'>'
+    t.lexer.pop_state()
+    return t
+
+# Cell and alias tokens
+def t_metadict_INITIAL_LPAREN(t):
     r'\('
     t.lexer.push_state('cell')
+    t.lexer.push_state('name')
     return t
 
-def t_cell_RPAREN(t):
+def t_alias_cell_RPAREN(t):
     r'\)'
     t.lexer.pop_state()
     return t
 
-def t_cell_VALUE(t):
-    r'''=
+def t_cell_CARET(t):
+    r'\^'
+    t.lexer.push_state('id')
+    return t
+
+def t_alias_cell_VALUE(t):
+    r'''=  # XXX I'd like to remove this, but I'm not sure that's allowed.
     ( [^)\\]    # Anything that's not \ or )
     | \\[)\\$]  # Basic escapes
     | \\\r?\n   # Line continuation
@@ -69,8 +117,33 @@ def t_cell_VALUE(t):
     t.value = t.value[1:]
     return t
 
+# Handling of 'name' state.
+def t_name_CARET(t):
+    r'\^'
+    t.lexer.begin('id')
+    return t
 
-# Wierd group stuff
+def t_name_NAME(t):
+    r'[A-Za-z_:][-A-Za-z_:!?+]*'
+    t.lexer.pop_state()
+    return t
+
+def t_id_HEX(t):
+    r'[0-9a-fA-F]+'
+    t.lexer.pop_state()
+    return t
+
+# Common tokens
+def t_alias_INITIAL_HEX(t):
+    r'[0-9a-fA-F]+'
+    return t
+
+def t_cell_INITIAL_COLON(t):
+    r':'
+    t.lexer.push_state('name')
+    return t
+
+# Group tokens
 t_GROUPSTART =  r'@\$\$\{[0-9a-fA-F]+\{@'
 t_GROUPCOMMIT = r'@\$\$\}[0-9a-fA-F]+\}@'
 # According to documentation, group aborts look like this:
@@ -82,7 +155,7 @@ t_GROUPABORT =  r'@\$\$\}(~abort~[0-9a-fA-F]+|~~)\}@'
 
 t_ANY_ignore = ' \t'
 
-literals = '<>[]{}:-+!^'
+literals = '[]{}-+!'
 
 def t_ANY_newline(t):
     r'(\r?\n)+'
