@@ -59,18 +59,15 @@ class MorkTableStore(_MorkStore):
 class MorkRowStore(_MorkStore):
     pass
 
-class MorkRowList(object):
-    def __init__(self):
-        self.rows = [] # [ ('namespace', 'id', MorkRow) ]
-
+class MorkRowList(list): # [ ('namespace', 'id', MorkRow) ]
     def clear(self):
-        del self.rows[:]
+        del self[:]
 
     def append(self, namespace, rowid, row):
-        self.rows.append((namespace, rowid, row))
+        list.append(self, (namespace, rowid, row))
 
     def index(self, namespace, rowid):
-        for (i, (ns, rid, row)) in enumerate(self.rows):
+        for (i, (ns, rid, row)) in enumerate(self):
             if ns == namespace and rid == rowid:
                 return i
 
@@ -80,22 +77,19 @@ class MorkRowList(object):
     def moveRow(self, namespace, rowid, newPos):
         pos = self.index(namespace, rowid)
 
-        if newPos >= len(self.rows):
+        if newPos >= len(self):
             warning.warn('during row move, newPos is outside of table range')
-            newPos = len(self.rows) - 1
+            newPos = len(self) - 1
 
-        item = self.rows[pos]
+        item = self[pos]
         if pos < newPos:
-            self.rows[pos:newPos+1] = self.rows[pos+1:newPos+1] + [item]
+            self[pos:newPos+1] = self[pos+1:newPos+1] + [item]
         else:
-            self.rows[newPos:pos+1] = [item] + self.rows[newPos:pos]
+            self[newPos:pos+1] = [item] + self[newPos:pos]
 
     def removeRow(self, namespace, rowid):
         i = self.index(namespace, rowid)
-        del self.rows[i]
-
-    def __iter__(self):
-        return iter(self.rows)
+        del self[i]
 
 class MorkTable(MorkRowList):
     def __init__(self):
@@ -103,7 +97,7 @@ class MorkTable(MorkRowList):
 
     def columnNames(self):
         columns = set()
-        for (namespace, rowid, row) in self.rows:
+        for (namespace, rowid, row) in self:
             columns.update(row.columnNames())
 
         return columns
