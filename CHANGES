@@ -1,0 +1,33 @@
+Version 1.1
+
+* Fixed bug: Tables containing -<objectId> caused a SyntaxError. The
+  parser didn't know this form of row-removal was allowed (because the
+  parser author didn't know).
+* Fixed bug: '!' character causes LexingError. Lexer and parser now
+  recognize '!' as the row-move operator.
+* Table rows are now kept in order rather than the order of the rows
+  being arbitrary. This allows the row-move operator ('!') to make
+  sense.
+* Added mork-documentation.txt with references to existing sources of
+  documentation.
+* Added mork-format.txt, my far-from-complete attempt to fully document
+  the format.
+* Modified group (AKA transaction) abort syntax to recognize the form
+  that appears to be used in practice. The old form (what appears in the
+  documentation) is still recognized as well.
+* Minor updates for PLY version 3.
+* Much smarter lexer. Mork is nearly "unlexable", so a lot of lexer
+  states are used. Mozilla's implementation cheats by using the parser
+  state to determine what lexical tokens to look for.
+* Added emptycells filter that removes cells with empty values. This is
+  especially useful with address books convented to XML, where you
+  normally get a lot of empty elements.
+
+Version 1.0.1
+
+* Restored demork.py to its original form. This is one of the example
+  programs, not actually part of mork-converter.
+
+Version 1.0
+
+* Initial release
