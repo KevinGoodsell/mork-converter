@@ -41,7 +41,7 @@ def _filterHelper(db):
         _filterTable(table, encoding)
 
 def _filterTable(table, encoding):
-    for (rowNamespace, rowId, row) in table.items():
+    for (rowNamespace, rowId, row) in table:
         fields = _utf16Fields.get(rowNamespace)
         if fields is None:
             # This type of row has no UTF-16 fields (as far as I know)

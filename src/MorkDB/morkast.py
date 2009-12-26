@@ -59,11 +59,11 @@ class Dict(MorkAst):
         self.meta = meta
 
     def __repr__(self):
-        return 'Dict(%r, %r)' % (self.cells, self.meta)
+        return 'Dict(%r, %r)' % (self.aliases, self.meta)
 
     def __str__(self):
         members = '%s\n%s' % (self.indentList('meta', self.meta),
-            self.indentList('cells', self.cells))
+            self.indentList('aliases', self.aliases))
         return 'Dict:\n%s' % self.indent(members)
 
 class MetaDict(MorkAst):
