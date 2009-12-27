@@ -105,9 +105,10 @@ def _outputHelper(db, out, tabs=False):
 def _writeTable(f, namespace, oid, table, indent):
     print >> f, 'TABLE (namespace: %s, id: %s)' % (namespace, oid)
 
-    # Rows in a table can be iterated over in a similar way to tables in
-    # MorkDatabase.tables.
-    for (rowNamespace, rowId, row) in table.items():
+    # A table is a customized list type where the items are 3-tuples of
+    # (namespace, id, row). This allows iteration similar to the iteration
+    # over db.tables, but the items() method is not used.
+    for (rowNamespace, rowId, row) in table:
         _writeRow(f, rowNamespace, rowId, row, indent)
 
 def _writeRow(f, namespace, oid, row, indent):
