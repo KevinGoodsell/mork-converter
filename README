@@ -1,6 +1,6 @@
 Mork Converter
-Version 1.0
-February 26, 2009
+Version 1.1
+December 26, 2009
 Kevin Goodsell
 
 Preliminary Info
@@ -20,14 +20,13 @@ might be useful to others.
 
 License
 -------
-This software is licensed under the MIT license. Read the LICENSE file
-for details.
+This is free software licensed under the MIT license. Read the LICENSE
+file for details.
 
 Contact
 -------
 If you find this useful or discover a problem with it, please let me
-know. It was an interesting project to work on, but I'll probably only
-update it if I hear that it's being used.
+know.
 
 Email:
 kevin-opensource@omegacrash.net
@@ -35,8 +34,9 @@ kevin-opensource@omegacrash.net
 Prerequisites
 -------------
 * Python 2, version 2.4 or higher. Python 3 is not supported.
-* PLY (Python Lex-Yacc). Version 2.5 was used during development. Other
-  versions have not been tested.
+* PLY (Python Lex-Yacc). Version 3.3 was used to develop and test this
+  version. 2.5 Was used for the previous version and will probably still
+  work.
 
 Basic Usage
 -----------
@@ -69,13 +69,14 @@ For additional help, use:
 About Mork Files
 ----------------
 Mork is a general-purpose text-based database format created for use in
-the Mozilla project. I know of four specific ways it has been used in
+the Mozilla project. I know of five specific ways it has been used in
 Mozilla and related projects (Firefox, Thunderbird):
 
-* Browsing history
-* Form history
-* Address book
-* Mailbox index
+* Browsing history (history.dat)
+* Form auto-complete history (formhistory.dat)
+* Address book (abook.mab, history.mab)
+* Mailbox index (*.msf)
+* Mail folder cache (panacea.dat)
 
 Unfortunately this format is rather convoluted and very difficult to
 read, making the data contained in the database practically inaccessible
@@ -97,8 +98,10 @@ corresponding to the tables in the Mork file, each identified by the
 table namespace and ID. Each table's meta-table is also included, and
 may contain information useful for interpreting the table contents.
 Meta-tables seem to always contain a 'k' field that identifies the
-'kind' of the table, and a 's' field that always seems to have the value
-'9'.
+'kind' of the table, and a 's' field for the table 'status', which is
+often simply '9'. A digit in the status gives the priority of the table.
+A 'u' or a 'v' indicate that the table is unique or verbose,
+respectively.
 
 Rows in a table are not uniform. Columns that appear in one row may not
 appear in others. This makes the output a little odd, especially in
@@ -108,8 +111,8 @@ for the columns that are not actually present in the row.
 
 Each row is also identified by a namespace and ID, which typically shows
 up in the output (as row attributes in XML and as extra columns in CSV).
-This will probably not be useful other than for debugging, so you can
-usually ignore it.
+The namespace may tell you something about the type of data in the row,
+but other than that this can largely be ignored.
 
 Filters
 -------
@@ -127,18 +130,29 @@ respectively.
 
 Database filters are specified with the --filter option. You may specify
 as many as you'd like, and they are applied in the order they are given
-on the command line. Available database filters include 'utf16', which
-converts UTF-16 fields to UTF-8, and 'times' which converts fields that
-represent times and dates to standard time formats.
+on the command line. Available database filters include:
 
-There is also a 'nometa' filter, which removes meta-tables from the
-database. This might come in handy for cases where the meta-tables do
-not contain useful information, and just get in the way of interpreting
-the output. Note, however, that the meta-tables might be necessary for
-other filters to function properly. Because of this, the 'nometa' filter
-should probably be the last filter applied.
+* utf16: Converts UTF-16 fields to UTF-8. You can usually identify files
+  that need this treatment by embedded zero bytes in the output file
+  which may cause it to be identified as a binary file.
 
-Applying a filter more than once will probably not work correctly.
+* times: Converts fields that represent times and dates to standard and
+  readable time formats.
+
+* nometa: Removes meta-tables from the database. This might come in
+  handy for cases where the meta-tables do not contain useful
+  information, and just get in the way of interpreting the output. Note,
+  however, that the meta-tables might be necessary for other filters to
+  function properly. Because of this, the 'nometa' filter should
+  probably be the last filter applied.
+
+* emptycells: Remove cells with empty values. This is particularly
+  useful for XML output of address books because each address book entry
+  tends to contain a lot of unused, empty fields. In XML these translate
+  to empty (and useless) elements.
+
+Do not apply the same filter more than once. In some cases it will do
+nothing, but it some it will cause errors.
 
 Known Issues
 ------------
