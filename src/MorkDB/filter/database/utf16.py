@@ -9,7 +9,7 @@ description = 'Convert UTF-16 fields to UTF-8'
 
 # All UTF-16 fields have to show up here.
 _utf16Fields = {
-    # {'now namespace' : set(['column name']) }
+    # {'row namespace' : set(['column name']) }
     'ns:history:db:row:scope:history:all' : set(['Name']),
     'ns:formhistory:db:row:scope:formhistory:all' : set(['Name', 'Value']),
 }
