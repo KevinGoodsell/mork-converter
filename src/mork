@@ -18,7 +18,7 @@ import getopt
 import MorkDB.filter.output as output
 import MorkDB.filter.database as dbfilter
 
-version = '1.0'
+version = '1.1'
 
 def showVersion():
     print ('Converter for Mozilla Mork files by Kevin Goodsell, version %s'
