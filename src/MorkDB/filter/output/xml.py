@@ -2,6 +2,13 @@
 
 # Output filter for writing Mork databases in XML format. This is also a basic
 # introduction to writing output filters using the tools in output.util.
+#
+# For reference, the XML 1.0 specification is available here:
+# http://www.w3.org/TR/2008/REC-xml-20081126/
+
+import re
+import warnings
+
 import MorkDB.filter.util as util
 
 # REQUIRED: All output filters should include _MORK_OUTPUT_FILTER. The value
@@ -39,7 +46,7 @@ _indentStr = '    '
 
 def _outputHelper(db, out='mork.xml'):
     f = open(out, 'w')
-    print >> f, '<?xml version="1.0"?>'
+    print >> f, '<?xml version="1.0" encoding="UTF-8" ?>'
     print >> f, '<morkxml>'
 
     for (namespace, oid, table) in db.tables.items():
@@ -89,9 +96,45 @@ def _writeCell(f, column, value, indent):
     print >> f, '%s<cell column=%s>%s</cell>' % (indentStr,
         _formatAttribute(column), _formatElementText(value))
 
+# Regex for stuff that's not in the 'Char' production of the XML grammar
+_non_char = (
+    u'['
+    u'\x00-\x08\x0B\x0C\x0E-\x1F'  # Control characters
+    u'\uD800-\uDFFF'               # Surrogates
+    u'\uFFFE\uFFFF'                # Permanently unassigned (BOM)
+    u']'
+)
+
+# Regex for stuff that's not in the 'AttValue' production in the XML grammar
+_non_att_value_matcher = re.compile(_non_char + u'|[<&"]')
+
+# Regex for stuff that's not in the 'CharData' production in the XML grammar
+_non_char_data_matcher = re.compile(_non_char + u'|[<&]|]]>')
+
+_replacements = {
+    '<'   : '&lt;',
+    '>'   : '&gt;',
+    '&'   : '&amp;',
+    '"'   : '&quot;',
+    "'"   : '&apos;',
+    ']]>' : ']]&gt;',
+}
+def _replacer(match):
+    old = match.group()
+    new = _replacements.get(old)
+    if new is None:
+        warnings.warn('found invalid XML characters; this will not be a '
+                      'well-formed XML document')
+        # Use a CharRef even though it's not well-formed, since CharRefs don't
+        # get around the character limitations in XML.
+        new = '&#x%x;' % ord(old)
+
+    return new
+
 def _formatAttribute(value):
-    return '"%s"' % value.replace('&', '&amp;').replace('"', '&quot;')
+    # This corresponds to 'AttValue' in the spec.
+    return '"%s"' % _non_att_value_matcher.sub(_replacer, value)
 
 def _formatElementText(value):
-    return value.replace('&', '&amp;').replace('<', '&lt;').replace('>',
-        '&gt;')
+    # This correspond to 'CharData' in the spec.
+    return _non_char_data_matcher.sub(_replacer, value)
