@@ -8,6 +8,7 @@
 
 import re
 import warnings
+import codecs
 
 import MorkDB.filter.util as util
 
@@ -45,7 +46,7 @@ def output(db, args):
 _indentStr = '    '
 
 def _outputHelper(db, out='mork.xml'):
-    f = open(out, 'w')
+    f = codecs.open(out, 'w', encoding='utf-8')
     print >> f, '<?xml version="1.0" encoding="UTF-8" ?>'
     print >> f, '<morkxml>'
 

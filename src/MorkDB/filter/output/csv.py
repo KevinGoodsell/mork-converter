@@ -1,6 +1,7 @@
 # Copyright (c) 2009 Kevin Goodsell
 import re
 import os
+import codecs
 
 import MorkDB.filter.util as util
 
@@ -79,7 +80,7 @@ class _SingleFileWriter(_TableWriter):
     def __init__(self, outname):
         _TableWriter.__init__(self)
 
-        self.fp = open(outname, 'w')
+        self.fp = codecs.open(outname, 'w', encoding='utf-8')
 
     def _newTable(self, namespace, oid, prefix=''):
         print >> self.fp, '-' * 70
@@ -106,7 +107,8 @@ class _MultiFileWriter(_TableWriter):
     def _newTable(self, namespace, oid, postfix=''):
         self.close()
         filename = '%s-%s%s' % (namespace, oid, postfix)
-        self.currentFile = open(os.path.join(self.dirname, filename), 'w')
+        self.currentFile = codecs.open(os.path.join(self.dirname, filename),
+                                       'w', encoding='utf-8')
         return self.currentFile
 
     def _newMetaTable(self, namespace, oid):
