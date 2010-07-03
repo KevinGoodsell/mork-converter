@@ -60,9 +60,6 @@ class MorkRowStore(_MorkStore):
     pass
 
 class MorkRowList(list): # [ ('namespace', 'id', MorkRow) ]
-    def clear(self):
-        del self[:]
-
     def append(self, namespace, rowid, row):
         list.append(self, (namespace, rowid, row))
 
