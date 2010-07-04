@@ -41,7 +41,7 @@ class XmlOutput(Filter):
             return
 
         if opts.outname is None or opts.outname == '-':
-            f = sys.stdout
+            f = codecs.getwriter('utf-8')(sys.stdout)
         else:
             f = codecs.open(opts.outname, 'w', encoding='utf-8')
 
@@ -145,4 +145,4 @@ class XmlOutput(Filter):
 # Since XML is to be the default output, its order should be the highest.
 # This makes it the last filter to have add_options called, and therefore it
 # gets the final word on option defaults.
-filt = XmlOutput(10200)
+xml_filter = XmlOutput(10200)
