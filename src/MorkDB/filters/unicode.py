@@ -1,6 +1,7 @@
 # Copyright 2010 Kevin Goodsell
 
 import warnings
+import codecs
 
 from filterbase import Filter
 
@@ -13,12 +14,7 @@ def _utf16_decoder(value, utf16_encoding):
     return value.decode(utf16_encoding)
 
 def _default_decoder(value, utf16_encoding):
-    try:
-        return value.decode('utf-8')
-    except:
-        pass
-
-    return value.decode('latin-1')
+    return value.decode('utf-8')
 
 class DecodeCharacters(Filter):
     def __init__(self, order):
@@ -77,11 +73,55 @@ class DecodeCharacters(Filter):
                                              _default_decoder)
                 try:
                     new_value = decoder(value, utf16_encoding)
-                except Exception, e:
-                    warnings.warn('failed to get encoding for row namespace '
-                                  '%s, column %s (%r)' %
-                                  (row_namespace, column, value))
+                except:
+                    pass
                 else:
                     row[column] = new_value
 
 decoding_filter = DecodeCharacters(2010)
+
+# Support for re-encoding str objects on output while directly encoding
+# unicode objects.
+
+class EncodingStream(object):
+    def __init__(self, default_encoding, output_encoding, stream):
+        (decoder, unused) = self._fix_encoding(default_encoding)
+        (encoder, bom) = self._fix_encoding(output_encoding)
+
+        self.decoder = codecs.getdecoder(decoder)
+        self.encoder = codecs.getencoder(encoder)
+        self.stream = stream
+
+        self.stream.write(bom)
+
+    @classmethod
+    def open(cls, default_encoding, output_encoding, filename):
+        f = open(filename, 'w')
+        return cls(default_encoding, output_encoding, f)
+
+    def write(self, s):
+        if isinstance(s, str):
+            (s, consumed) = self.decoder(s)
+
+        (s, consumed) = self.encoder(s)
+        self.stream.write(s)
+
+    def __getattr__(self, name):
+        return getattr(self.stream, name)
+
+    def _fix_encoding(self, encoding):
+        normalized = codecs.lookup(encoding).name
+        if normalized == 'utf-16':
+            if codecs.BOM_UTF16 == codecs.BOM_UTF16_BE:
+                return ('utf-16-be', codecs.BOM_UTF16_BE)
+            else:
+                return ('utf-16-le', codecs.BOM_UTF16_LE)
+        elif normalized == 'utf-32':
+            if codecs.BOM_UTF32 == codecs.BOM_UTF32_BE:
+                return ('utf-32-be', codecs.BOM_UTF32_BE)
+            else:
+                return ('utf-32-le', codecs.BOM_UTF32_LE)
+        elif normalized == 'utf-8-sig':
+            return ('utf-8', codecs.BOM_UTF8)
+        else:
+            return (normalized, '')

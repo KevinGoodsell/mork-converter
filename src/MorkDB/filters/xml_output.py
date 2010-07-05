@@ -8,10 +8,10 @@
 
 import re
 import warnings
-import codecs
 import sys
 
 from filterbase import Filter
+from unicode import EncodingStream
 
 # Filter is available as a base class for filter classes, but it's not
 # necessary. Filters can be classes or class instances. In this case it
@@ -41,9 +41,9 @@ class XmlOutput(Filter):
             return
 
         if opts.outname is None or opts.outname == '-':
-            f = codecs.getwriter('utf-8')(sys.stdout)
+            f = EncodingStream('latin-1', 'utf-8', sys.stdout)
         else:
-            f = codecs.open(opts.outname, 'w', encoding='utf-8')
+            f = EncodingStream.open('latin-1', 'utf-8', opts.outname)
 
         self._output(db, f)
 
