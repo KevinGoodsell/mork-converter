@@ -78,8 +78,6 @@ class DecodeCharacters(Filter):
                 try:
                     new_value = decoder(value, utf16_encoding)
                 except Exception, e:
-                    import pdb
-                    pdb.set_trace()
                     warnings.warn('failed to get encoding for row namespace '
                                   '%s, column %s (%r)' %
                                   (row_namespace, column, value))
