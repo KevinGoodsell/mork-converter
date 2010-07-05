@@ -109,19 +109,29 @@ class EncodingStream(object):
     def __getattr__(self, name):
         return getattr(self.stream, name)
 
+    _boms = {
+        'utf-16-be' : codecs.BOM_UTF16_BE,
+        'utf-16-le' : codecs.BOM_UTF16_LE,
+        'utf-32-be' : codecs.BOM_UTF32_BE,
+        'utf-32-le' : codecs.BOM_UTF32_LE,
+    }
     def _fix_encoding(self, encoding):
         normalized = codecs.lookup(encoding).name
+
+        if normalized == 'utf-8-sig':
+            return ('utf-8', codecs.BOM_UTF8)
+
         if normalized == 'utf-16':
             if codecs.BOM_UTF16 == codecs.BOM_UTF16_BE:
-                return ('utf-16-be', codecs.BOM_UTF16_BE)
+                replacement = 'utf-16-be'
             else:
-                return ('utf-16-le', codecs.BOM_UTF16_LE)
+                replacement = 'utf-16-le'
         elif normalized == 'utf-32':
             if codecs.BOM_UTF32 == codecs.BOM_UTF32_BE:
-                return ('utf-32-be', codecs.BOM_UTF32_BE)
+                replacement = 'utf-32-be'
             else:
-                return ('utf-32-le', codecs.BOM_UTF32_LE)
-        elif normalized == 'utf-8-sig':
-            return ('utf-8', codecs.BOM_UTF8)
+                replacement = 'utf-32-le'
         else:
-            return (normalized, '')
+            replacement = normalized
+
+        return (replacement, self._boms.get(replacement, ''))
