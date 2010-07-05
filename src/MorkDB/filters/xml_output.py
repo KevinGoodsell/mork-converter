@@ -41,14 +41,16 @@ class XmlOutput(Filter):
             return
 
         if opts.outname is None or opts.outname == '-':
-            f = EncodingStream('latin-1', 'utf-8', sys.stdout)
+            f = EncodingStream(opts.def_encoding, opts.out_encoding,
+                               sys.stdout)
         else:
-            f = EncodingStream.open('latin-1', 'utf-8', opts.outname)
+            f = EncodingStream.open(opts.def_encoding, opts.out_encoding,
+                                    opts.outname)
 
         self._output(db, f)
 
     def _output(self, db, f):
-        print >> f, '<?xml version="1.0" encoding="UTF-8" ?>'
+        print >> f, '<?xml version="1.0"?>'
         print >> f, '<morkxml>'
 
         for (namespace, oid, table) in db.tables.items():
