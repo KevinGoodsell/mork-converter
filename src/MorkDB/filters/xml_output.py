@@ -11,7 +11,7 @@ import warnings
 import sys
 
 from filterbase import Filter
-from unicode import EncodingStream
+from encoding import EncodingStream
 
 # Filter is available as a base class for filter classes, but it's not
 # necessary. Filters can be classes or class instances. In this case it

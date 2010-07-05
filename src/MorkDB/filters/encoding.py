@@ -22,7 +22,7 @@ class DecodeCharacters(Filter):
 
     def add_options(self, parser):
         parser.add_option('--no-decoding', action='store_true',
-            help="don't decode character encodings")
+            help="don't decode fields, always assume default encoding")
 
     def process(self, db, opts):
         if opts.no_decoding:
