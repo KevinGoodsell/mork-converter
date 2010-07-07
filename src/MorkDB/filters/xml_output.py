@@ -107,12 +107,14 @@ class XmlOutput(Filter):
     )
 
     # Regex for stuff that's not in the 'AttValue' production in the XML
-    # grammar
-    _non_att_value_matcher = re.compile(_non_char + u'|[<&"]')
+    # grammar. '>' is also included for symmetry.
+    _non_att_value_matcher = re.compile(_non_char + u'|[<>&"]')
 
     # Regex for stuff that's not in the 'CharData' production in the XML
-    # grammar
-    _non_char_data_matcher = re.compile(_non_char + u'|[<&]|]]>')
+    # grammar. '>' is also included for symmetry.
+    _non_char_data_matcher = re.compile(_non_char + u'|[<>&]')
+    # For reference, the version without '>' requires including ']]>':
+    #_non_char_data_matcher = re.compile(_non_char + u'|[<&]|]]>')
 
     _replacements = {
         '<'   : '&lt;',
