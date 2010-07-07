@@ -15,7 +15,7 @@ if sys.version_info < minPythonVersion:
 
 import optparse
 
-from MorkDB.filters import enumerate_filters
+from MorkDB.filters import enumerate_filters, list_filters
 
 version = '2.0-prerelease'
 
@@ -27,6 +27,12 @@ def printSyntaxTree(f):
     import MorkDB.morkyacc as morkyacc
     tree = morkyacc.parseFile(f)
     print tree
+
+def print_filters():
+    filts = enumerate_filters()
+    lines = ['%5d - %s' % (order, filt.__class__.__name__)
+             for (order, filt) in filts]
+    print '\n'.join(lines)
 
 def processDatabase(f, filters, opts):
     import MorkDB.morkdb as morkdb
@@ -54,6 +60,9 @@ def parse_arguments(args, filters):
         const='tokens', help='just print lexical tokens')
     debug_group.add_option('--syntax', dest='out_format', action='store_const',
         const='syntax', help='just print abstract syntax')
+    debug_group.add_option('--filters', dest='out_format',
+        action='store_const', const='filters',
+        help='just list available filters')
     parser.add_option_group(debug_group)
 
     parser.set_defaults(out_encoding='utf-8')
@@ -69,7 +78,7 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
 
-    filters = enumerate_filters()
+    filters = list_filters()
     (opts, arguments) = parse_arguments(args, filters)
 
     if len(arguments) == 0:
@@ -81,6 +90,8 @@ def main(args=None):
         printTokens(f)
     elif opts.out_format == 'syntax':
         printSyntaxTree(f)
+    elif opts.out_format == 'filters':
+        print_filters()
     else:
         processDatabase(f, filters, opts)
 

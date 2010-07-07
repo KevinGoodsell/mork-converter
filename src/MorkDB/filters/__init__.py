@@ -29,14 +29,22 @@ def _find_modules():
         else:
             yield sys.modules[module_name]
 
+_filters = None
 def enumerate_filters():
-    filters = set()
-    for m in _find_modules():
-        for (name, obj) in vars(m).items():
-            if hasattr(obj, 'mork_filter_order') and \
-               obj.mork_filter_order >= 0:
-                filters.add(obj)
+    global _filters
 
-    filters = [(obj.mork_filter_order, obj) for obj in filters]
-    filters.sort()
-    return [obj for (order, obj) in filters]
+    if _filters is None:
+        filters = set()
+        for m in _find_modules():
+            for (name, obj) in vars(m).items():
+                if hasattr(obj, 'mork_filter_order') and \
+                   obj.mork_filter_order >= 0:
+                    filters.add(obj)
+
+        _filters = [(obj.mork_filter_order, obj) for obj in filters]
+        _filters.sort()
+
+    return _filters
+
+def list_filters():
+    return [filt for (order, filt) in enumerate_filters()]
