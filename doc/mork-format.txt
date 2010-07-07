@@ -1,3 +1,7 @@
+==============================================
+NOTE: THIS IS NOT COMPLETE! DO NOT RELY ON IT!
+==============================================
+
 Mork File Format Description
 Kevin Goodsell
 Sun, 20 Dec 2009 12:18:19 -0800
