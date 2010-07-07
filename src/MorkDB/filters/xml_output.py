@@ -41,11 +41,9 @@ class XmlOutput(Filter):
             return
 
         if opts.outname is None or opts.outname == '-':
-            f = EncodingStream(opts.def_encoding, opts.out_encoding,
-                               sys.stdout)
+            f = EncodingStream(opts.out_encoding, sys.stdout)
         else:
-            f = EncodingStream.open(opts.def_encoding, opts.out_encoding,
-                                    opts.outname)
+            f = EncodingStream.open(opts.out_encoding, opts.outname)
 
         self._output(db, f)
 

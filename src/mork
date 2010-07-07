@@ -45,8 +45,6 @@ def parse_arguments(args, filters):
     parser.add_option('-o', '--outname', help='output file or dir name')
     parser.add_option('-e', '--out-encoding', metavar='ENC',
         help="use ENC as the output encoding (e.g., utf-16)")
-    parser.add_option('-d', '--def-encoding', metavar='ENC',
-        help="use ENC as the default encoding when interpreting Mork fields")
 
     for f in filters:
         f.add_options(parser)
@@ -58,7 +56,7 @@ def parse_arguments(args, filters):
         const='syntax', help='just print abstract syntax')
     parser.add_option_group(debug_group)
 
-    parser.set_defaults(out_encoding='utf-8', def_encoding='latin-1')
+    parser.set_defaults(out_encoding='utf-8')
 
     (options, arguments) = parser.parse_args(args)
 
