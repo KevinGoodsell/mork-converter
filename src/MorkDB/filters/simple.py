@@ -21,7 +21,7 @@ class StripEmptyCells(Filter):
                 if not val:
                     del row[col]
 
-strip_empty_filter = StripEmptyCells(200)
+strip_empty_filter = StripEmptyCells(100)
 
 class StripMetaTables(Filter):
     def __init__(self, order):
@@ -37,4 +37,5 @@ class StripMetaTables(Filter):
 
         db.metaTables.clear()
 
-strip_metatables_filter = StripMetaTables(100)
+# Meta-tables might be necessary for other filters, so they get removed late.
+strip_metatables_filter = StripMetaTables(8900)
