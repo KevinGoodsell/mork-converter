@@ -37,7 +37,7 @@ class DecodeMimeHeaders(Filter):
     _header_fields = {
         # {'row namespace' : set(['column name'])}
         'ns:msg:db:row:scope:msgs:all' : set(['recipients', 'sender',
-                                              'subject', 'ccList']),
+                                              'subject', 'ccList', 'replyTo']),
         'ns:msg:db:row:scope:threads:all' : set(['threadSubject']),
     }
 
