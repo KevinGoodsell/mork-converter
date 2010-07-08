@@ -29,9 +29,14 @@ def printSyntaxTree(f):
     print tree
 
 def print_filters():
-    filts = enumerate_filters()
-    lines = ['%5d - %s' % (order, filt.__class__.__name__)
-             for (order, filt) in filts]
+    lines = []
+    for (order, filt) in enumerate_filters():
+        if hasattr(filt, '__name__'):
+            name = filt.__name__
+        else:
+            name = filt.__class__.__name__
+        lines.append('%5d - %s' % (order, name))
+
     print '\n'.join(lines)
 
 def processDatabase(f, filters, opts):
