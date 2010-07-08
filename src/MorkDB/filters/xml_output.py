@@ -27,15 +27,22 @@ class XmlOutput(Filter):
 
     # REQUIRED: All filters have an add_options method. It takes an instance
     # of optparse.OptionParser, and should add any filter-specific options.
+    # While this is required, a no-op version is provided in Filter, so when
+    # deriving from Filter it's OK to not provide your own if there are no
+    # options to add.
     def add_options(self, parser):
+        # In this case, there are no new options (xml is the default format).
+        # However, filters for doing output should usually set the out_format
+        # option value to whatever format they recognize. This way, the default
+        # output format is selected from the highest priority filter
+        # automatically.
         parser.set_defaults(out_format='xml')
 
     # REQUIRED: All filters have a process method. It takes a MorkDatabase
     # instance and the options from the optparse.OptionParser. This is where
     # the actual work is done. A filter that is disabled (by options or by
     # default) should just return. A filter that modifies the database should
-    # just do it in place. Output filters just read the database and do
-    # output.
+    # do it in place. Output filters should read the database and do output.
     def process(self, db, opts):
         if opts.out_format != 'xml':
             return
