@@ -25,6 +25,7 @@ from encoding import EncodingStream
 # filters, but the class itself can also work. This example will show how this
 # is done. There are several examples of instance-based filters in the source.
 class TutorialFilter(Filter):
+    '''Demonstration filter that produces simple text output.'''
     # The mork_filter_order attribute provides the ordering for filters:
     # the lower the order, the earlier the filter is run. A negative value
     # can be used to disable a filter, or in cases where a class is intended

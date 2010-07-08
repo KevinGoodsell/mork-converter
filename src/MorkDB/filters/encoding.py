@@ -33,9 +33,11 @@ def _utf16_decoder(value, opts, byte_order):
 
     return decoder(value)[0]
 
-# Converts field to unicode objects. Tries to interpret using known encodings,
-# or tries to guess, or uses the --def-encoding option.
 class DecodeCharacters(Filter):
+    '''
+    Converts fields to unicode objects. Tries to interpret using known
+    encodings, or tries to guess, or uses the --def-encoding option.
+    '''
     def __init__(self, order):
         self.mork_filter_order = order
 

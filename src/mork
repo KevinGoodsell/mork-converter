@@ -3,6 +3,7 @@
 
 # Do python version checking up front.
 import sys
+import re
 
 minPythonVersion = (2, 4)
 if sys.version_info < minPythonVersion:
@@ -28,16 +29,22 @@ def printSyntaxTree(f):
     tree = morkyacc.parseFile(f)
     print tree
 
+_leading_space_matcher = re.compile(r'^\s+', re.MULTILINE)
+def _format_docstring(docstring, indent):
+    s = docstring.strip()
+    return indent + _leading_space_matcher.sub(indent, s)
+
 def print_filters():
-    lines = []
     for (order, filt) in enumerate_filters():
         if hasattr(filt, '__name__'):
             name = filt.__name__
         else:
             name = filt.__class__.__name__
-        lines.append('%5d - %s' % (order, name))
 
-    print '\n'.join(lines)
+        print '%5d - %s' % (order, name)
+
+        if filt.__doc__:
+            print _format_docstring(filt.__doc__, ' '*10)
 
 def processDatabase(f, filters, opts):
     import MorkDB.morkdb as morkdb

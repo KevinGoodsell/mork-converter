@@ -6,8 +6,8 @@ import quopri
 
 from filterbase import Filter
 
-# Filter to decode RFC 2047 MIME headers.
 class DecodeMimeHeaders(Filter):
+    '''Filter to decode RFC 2047 MIME headers.'''
     def __init__(self, order):
         self.mork_filter_order = order
 

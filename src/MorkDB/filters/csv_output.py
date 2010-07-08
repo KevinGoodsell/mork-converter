@@ -10,6 +10,9 @@ from filterbase import Filter
 from encoding import EncodingStream
 
 class CsvOutput(Filter):
+    '''
+    Filter that writes Mork databases in Comma-Separated Values format.
+    '''
     def __init__(self, order):
         self.mork_filter_order = order
 

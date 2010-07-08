@@ -23,8 +23,8 @@ def _convert_hex_seconds(text, format):
 def _convert_microseconds(text, format):
     return _convert_textual_time(text, format, divisor=1000000)
 
-# Filter to convert cryptic time/date fields to a nicer format.
 class ConvertTimes(Filter):
+    '''Filter to convert cryptic time/date fields to a nicer format.'''
     def __init__(self, order):
         self.mork_filter_order = order
 

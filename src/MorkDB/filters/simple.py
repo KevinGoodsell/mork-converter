@@ -5,6 +5,9 @@
 from filterbase import Filter
 
 class StripEmptyCells(Filter):
+    '''
+    Filter to remove cells with empty values, producing more compact output.
+    '''
     def __init__(self, order):
         self.mork_filter_order = order
 
@@ -24,6 +27,9 @@ class StripEmptyCells(Filter):
 strip_empty_filter = StripEmptyCells(100)
 
 class StripMetaTables(Filter):
+    '''
+    Filter to remove meta-tables, since they aren't necessarily useful to see.
+    '''
     def __init__(self, order):
         self.mork_filter_order = order
 

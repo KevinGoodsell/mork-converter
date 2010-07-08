@@ -17,6 +17,7 @@ from encoding import EncodingStream
 # necessary. Filters can be classes or class instances. In this case it
 # will be an instance.
 class XmlOutput(Filter):
+    '''Filter to produce XML output.'''
     def __init__(self, order, indent_str='    '):
         # REQUIRED: All filters, whether class or instance, must have a
         # mork_filter_order attribute, and the value must be non-negative for
