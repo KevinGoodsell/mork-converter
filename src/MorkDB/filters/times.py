@@ -4,6 +4,25 @@ import time
 
 from filterbase import Filter
 
+def _convert_textual_time(text, format, base=10, divisor=1):
+    # 0 is a common value, and obviously doesn't repressent a valid time.
+    if text == '0':
+        return '0'
+
+    seconds = int(text, base) / divisor
+    t = time.localtime(seconds)
+
+    return time.strftime(format, t)
+
+def _convert_seconds(text, format):
+    return _convert_textual_time(text, format)
+
+def _convert_hex_seconds(text, format):
+    return _convert_textual_time(text, format, base=16)
+
+def _convert_microseconds(text, format):
+    return _convert_textual_time(text, format, divisor=1000000)
+
 # Filter to convert cryptic time/date fields to a nicer format.
 class ConvertTimes(Filter):
     def __init__(self, order):
@@ -24,7 +43,7 @@ class ConvertTimes(Filter):
         format = opts.time_format or '%c'
 
         for (row_namespace, rowid, row) in db.rows.items():
-            fields = self._table_time_fields.get(row_namespace)
+            fields = self._time_converters.get(row_namespace)
             if fields is None:
                 # No known times in this type of row.
                 continue
@@ -37,56 +56,33 @@ class ConvertTimes(Filter):
 
                 row[column] = converter(value, format)
 
-    @classmethod
-    def _convert_text(cls, text, format, base=10, divisor=1):
-        # 0 is a common value, and obviously doesn't repressent a valid time.
-        if text == '0':
-            return '0'
+    _time_converters = {
+        # { 'row namespace' : {'field name' : convert_function} }
+        'ns:addrbk:db:row:scope:card:all' : {
+            'LastModifiedDate' : _convert_hex_seconds,
+        },
 
-        seconds = int(text, base) / divisor
-        t = time.localtime(seconds)
+        'ns:history:db:row:scope:history:all' : {
+            'LastVisitDate'  : _convert_microseconds,
+            'FirstVisitDate' : _convert_microseconds,
+        },
 
-        return time.strftime(format, t)
+        'ns:msg:db:row:scope:dbfolderinfo:all' : {
+            'folderDate' : _convert_hex_seconds,
+            'MRUTime'    : _convert_seconds,
+        },
 
-    @classmethod
-    def _convert_seconds(cls, text, format):
-        return cls._convert_text(text, format)
+        'ns:msg:db:row:scope:folders:all' : {
+            'MRUTime' : _convert_seconds,
+        },
 
-    @classmethod
-    def _convert_hex_seconds(cls, text, format):
-        return cls._convert_text(text, format, base=16)
+        'ns:msg:db:row:scope:msgs:all' : {
+            'date' : _convert_hex_seconds,
+        },
 
-    @classmethod
-    def _convert_micro_seconds(cls, text, format):
-        return cls._convert_text(text, format, divisor=1000000)
-
-ConvertTimes._table_time_fields = {
-    # { 'row namespace' : {'field name' : covert_function} }
-    'ns:addrbk:db:row:scope:card:all' : {
-        'LastModifiedDate' : ConvertTimes._convert_hex_seconds,
-    },
-
-    'ns:history:db:row:scope:history:all' : {
-        'LastVisitDate'  : ConvertTimes._convert_micro_seconds,
-        'FirstVisitDate' : ConvertTimes._convert_micro_seconds,
-    },
-
-    'ns:msg:db:row:scope:dbfolderinfo:all' : {
-        'folderDate' : ConvertTimes._convert_hex_seconds,
-        'MRUTime'    : ConvertTimes._convert_seconds,
-    },
-
-    'ns:msg:db:row:scope:folders:all' : {
-        'MRUTime' : ConvertTimes._convert_seconds,
-    },
-
-    'ns:msg:db:row:scope:msgs:all' : {
-        'date' : ConvertTimes._convert_hex_seconds,
-    },
-
-    'm' : {
-        'threadNewestMsgDate' : ConvertTimes._convert_hex_seconds,
-    },
-}
+        'm' : {
+            'threadNewestMsgDate' : _convert_hex_seconds,
+        },
+    }
 
 convert_times_filter = ConvertTimes(5000)

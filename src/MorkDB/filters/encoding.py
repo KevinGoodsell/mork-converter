@@ -5,22 +5,39 @@ import codecs
 
 from filterbase import Filter
 
+# Character decoders. Unused parameters are to keep the interface consistent.
+def _default_decoder(value, opts, byte_order):
+    return value.decode(opts.def_encoding)
+
+def _utf8_fallback_decoder(value, opts, byte_order):
+    try:
+        return value.decode('utf-8')
+    except UnicodeError:
+        return _default_decoder(value, opts, byte_order)
+
+_utf16_byte_order_decoders = {
+    # Byte order tags from the ByteOrder meta-table field.
+    'llll' : codecs.getdecoder('utf-16-le'),
+    'LE'   : codecs.getdecoder('utf-16-le'),
+    'BBBB' : codecs.getdecoder('utf-16-be'),
+    'BE'   : codecs.getdecoder('utf-16-be'),
+}
+def _utf16_decoder(value, opts, byte_order):
+    if byte_order is None:
+        # Default to little-endian because that's how it works in test files.
+        byte_order = 'LE'
+
+    decoder = _utf16_byte_order_decoders.get(byte_order)
+    assert decoder is not None, \
+        'Unknown byte order: %s' % byte_order
+
+    return decoder(value)[0]
+
 # Converts field to unicode objects. Tries to interpret using known encodings,
 # or tries to guess, or uses the --def-encoding option.
 class DecodeCharacters(Filter):
     def __init__(self, order):
         self.mork_filter_order = order
-
-        # Decoders for specific fields where guessing won't work.
-        self._decoders = {
-            # {('row namespace', 'column name') : decoder_function}
-            ('ns:history:db:row:scope:history:all', 'Name') :
-                self._utf16_decoder,
-            ('ns:formhistory:db:row:scope:formhistory:all', 'Name') :
-                self._utf16_decoder,
-            ('ns:formhistory:db:row:scope:formhistory:all', 'Value') :
-                self._utf16_decoder,
-        }
 
     def add_options(self, parser):
         parser.add_option('-d', '--def-encoding', metavar='ENC',
@@ -43,31 +60,16 @@ class DecodeCharacters(Filter):
 
             self._filter_table(table, byte_order, opts)
 
-    def _default_decoder(self, value, opts, byte_order):
-        return value.decode(opts.def_encoding)
-
-    def _utf8_fallback_decoder(self, value, opts, byte_order):
-        try:
-            return value.decode('utf-8')
-        except UnicodeError:
-            return self._default_decoder(value, opts, byte_order)
-
-    _utf16_byte_order_decoders = {
-        # Byte order tags from the ByteOrder meta-table field.
-        'llll' : codecs.getdecoder('utf-16-le'),
-        'LE'   : codecs.getdecoder('utf-16-le'),
-        'BBBB' : codecs.getdecoder('utf-16-be'),
-        'BE'   : codecs.getdecoder('utf-16-be'),
+    # Decoders for specific fields where guessing won't work.
+    _decoders = {
+        # {('row namespace', 'column name') : decoder_function}
+        ('ns:history:db:row:scope:history:all', 'Name') :
+            _utf16_decoder,
+        ('ns:formhistory:db:row:scope:formhistory:all', 'Name') :
+            _utf16_decoder,
+        ('ns:formhistory:db:row:scope:formhistory:all', 'Value') :
+            _utf16_decoder,
     }
-    def _utf16_decoder(self, value, opts, byte_order):
-        if byte_order is None:
-            decoder = codecs.getdecoder('utf-16-le')
-        else:
-            decoder = self._utf16_byte_order_decoders.get(byte_order)
-            assert decoder is not None, \
-                'Unknown byte order: %s' % byte_order
-
-        return decoder(value)[0]
 
     def _filter_table(self, table, byte_order, opts):
         for (row_namespace, row_id, row) in table:
@@ -76,11 +78,11 @@ class DecodeCharacters(Filter):
                     continue
 
                 if opts.no_decoding:
-                    decoder = self._default_decoder
+                    decoder = _default_decoder
                 else:
                     decoder = self._decoders.get((row_namespace, column))
                     if decoder is None:
-                        decoder = self._utf8_fallback_decoder
+                        decoder = _utf8_fallback_decoder
 
                 row[column] = decoder(value, opts, byte_order)
 
