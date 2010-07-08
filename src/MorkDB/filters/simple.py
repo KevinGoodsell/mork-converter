@@ -38,4 +38,4 @@ class StripMetaTables(Filter):
         db.metaTables.clear()
 
 # Meta-tables might be necessary for other filters, so they get removed late.
-strip_metatables_filter = StripMetaTables(8900)
+strip_metatables_filter = StripMetaTables(9900)
