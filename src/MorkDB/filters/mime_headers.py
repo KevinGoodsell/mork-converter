@@ -62,6 +62,7 @@ class DecodeMimeHeaders(Filter):
         \?                    # literal ?
         (?P<encoded>.*?)      # non-greedy up to the next ?= is the encoded string
         \?=                   # literal ?=
+        (\s+(?==\?))?         # consume the space between two encoded strings
     ''', re.VERBOSE | re.IGNORECASE | re.MULTILINE)
 
     def _replacer(self, m):
