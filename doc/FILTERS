@@ -1,20 +1,17 @@
-There are two types of filters:
+Filters have been re-designed from the first versions of this
+application. They still serve two basic purposes (manipulating the
+database and doing output of the data), but the distinction is less
+explicit.
 
-Output filters are used to write output. This determines the output
-format and location. These filters can be found in
-src/MorkDB/filter/output.
+All filters are now located in src/MorkDB/filters.
 
-Database filters do translation and tweaking of databases prior to
-output. These filters can be found in src/MorkDB/filter/database.
+The file tutorial.py is a tutorial for writing a filter that performs
+output. Read it in a text editor. The xml_output.py filter also has a
+lot of comments and serves as a decent tutorial itself.
 
-The file tutorial.py is a tutorial for writing an output filter. Read it
-in a text editor. The xml.py output filter also has a lot of comments
-and serves as a decent tutorial itself.
-
-Database filters don't have any explicit documentation, but they are
-very similar to output filters. The only differences are in the names of
-the required elements -- instead of a _MORK_OUTPUT_FILTER variable to
-identify the filter, database filters have a _MORK_DATABASE_FILTER
-variable. Instead of a function called output(), database filters have a
-function called filter(). I know, I shouldn't have used the name of an
-existing built-in function for this.
+Filters now have an explicit ordering. Each filter declares its order
+with the mork_filter_order attribute. This is just an integer which must
+be non-negative for active filters and determines the order in which
+filters are applied. The file src/MorkDB/filters/filterbase.py describes
+the basic meaning of certain values, providing guidelines for which
+value ranges to use for certain purposes.
