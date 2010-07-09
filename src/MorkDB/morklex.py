@@ -1,8 +1,23 @@
 '''
-Copyright (c) 2009 Kevin Goodsell
+Copyright 2009, 2010 Kevin Goodsell
 
 morklex.py -- PLY-based lexical analyzer for Mork database files.
 '''
+
+# This file is part of mork-converter.
+#
+# mork-converter is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License Version 2 as published
+# by the Free Software Foundation.
+#
+# mork-converter is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
+
 import ply.lex as lex
 import re
 import sys

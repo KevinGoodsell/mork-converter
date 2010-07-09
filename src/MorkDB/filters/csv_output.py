@@ -2,6 +2,20 @@
 #
 # Mork output filter for Comma-Separated Values.
 
+# This file is part of mork-converter.
+#
+# mork-converter is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License Version 2 as published
+# by the Free Software Foundation.
+#
+# mork-converter is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
+
 import re
 import os
 import sys
