@@ -69,6 +69,39 @@ For additional help, use:
 
   mork --help
 
+Character Encoding Notes
+------------------------
+A few options let you specify character encodings. The accepted encoding
+names are determined by your Python installation, and you can find a
+list of the standard encoding names here:
+
+http://docs.python.org/library/codecs.html#standard-encodings
+
+The options that deal with character encodings require some
+clarification. The most basic one  is the -e/--out-encoding option,
+which is pretty straight-forward. It determines the encoding used for
+the output file (UTF-8 by default). Any of the Unicode encodings (e.g.
+utf-8, utf-16, utf-32) should typically work. Encodings that only
+support a subset of Unicode (such as the ISO-8859 family of encodings)
+may or may not work depending on what characters appear in the input
+database.
+
+The -d/--def-encoding option is more tricky. This determines what
+encoding will be assumed for database fields after other methods of
+determining the encoding fail. These "other methods" currently include
+looking up the field in a (small) table of fields with known encodings,
+then attempting to decode the field as UTF-8 (which hopefully will be
+unlikely to work properly with non-UTF-8 fields). Typically
+--def-encoding should be an 8-bit encoding like ISO-8859-1 (aka latin1,
+which is also the default) which will successfully decode any string it
+is given (though whether the result makes sense depends on the input).
+
+The --only-def-encoding option disables the "other methods" described
+above and goes straight to the --def-encoding encoding for all fields.
+This could come in handy if those techniques are giving incorrect
+results, or if you just want to see the original byte values for
+troubleshooting purposes.
+
 About Mork Files
 ----------------
 Mork is a general-purpose text-based database format created for use in
