@@ -1,3 +1,19 @@
+Version 2.0
+
+* Completely new command line interface. This makes it much more
+  standard.
+* Completely new filter architecture. This makes filters simpler and
+  ties them into the command line parser, allowing the nicer command
+  line interface.
+* New mime_headers filter to decode RFC 2047 MIME-encoded email headers.
+* XML output is more strictly conforming, with warnings for some
+  unhandled cases.
+* Works harder to identify the character encoding used for each field.
+* Allows character encodings to be supplied on the command line, both
+  for the output file and for the default interpretation of input
+  database fields.
+* Switching to GPL2 for the license.
+
 Version 1.1
 
 * Fixed bug: Tables containing -<objectId> caused a SyntaxError. The
