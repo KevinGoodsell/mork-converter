@@ -43,10 +43,11 @@ class DecodeCharacters(Filter):
 
     def add_options(self, parser):
         parser.add_option('-d', '--def-encoding', metavar='ENC',
-            help="use ENC as the default encoding when interpreting Mork "
-                 "fields")
-        parser.add_option('--no-decoding', action='store_true',
-            help="don't decode fields, always assume default encoding")
+            help="use ENC as the character encoding when no other encoding "
+                 "can be determined")
+        parser.add_option('--only-def-encoding', action='store_true',
+            help="interpret all fields using --def-encoding, don't test "
+                 "to determine the character encoding")
 
         parser.set_defaults(def_encoding='latin-1')
 
@@ -79,7 +80,7 @@ class DecodeCharacters(Filter):
                 if isinstance(value, unicode):
                     continue
 
-                if opts.no_decoding:
+                if opts.only_def_encoding:
                     decoder = _default_decoder
                 else:
                     decoder = self._decoders.get((row_namespace, column))
