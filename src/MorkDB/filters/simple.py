@@ -27,7 +27,7 @@ class StripEmptyCells(Filter):
 
     def add_options(self, parser):
         parser.add_option('-s', '--strip-empty', action='store_true',
-            help='strip empty cells from the database')
+            help="don't include empty cells in the output")
 
     def process(self, db, opts):
         if not opts.strip_empty:
@@ -49,7 +49,7 @@ class StripMetaTables(Filter):
 
     def add_options(self, parser):
         parser.add_option('-m', '--strip-meta', action='store_true',
-            help='strip meta-tables from the database')
+            help="don't include meta-tables in the output")
 
     def process(self, db, opts):
         if not opts.strip_meta:
