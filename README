@@ -1,6 +1,6 @@
 Mork Converter
-Version 1.1
-December 26, 2009
+Version 2.0
+July 9, 2010
 Kevin Goodsell
 
 Preliminary Info
@@ -20,8 +20,12 @@ might be useful to others.
 
 License
 -------
-This is free software licensed under the MIT license. Read the LICENSE
-file for details.
+This is free software released under the GNU General Public License,
+version 2. Read the COPYING file for details.
+
+This license does not apply to files in the other/ directory, which are
+not my work. You'll have to read those files (or contact the authors)
+for license information.
 
 Contact
 -------

@@ -18,7 +18,7 @@ import optparse
 
 from MorkDB.filters import enumerate_filters, list_filters
 
-version = '2.0-prerelease'
+version = '2.0'
 
 def print_tokens(f):
     import MorkDB.morklex as morklex
