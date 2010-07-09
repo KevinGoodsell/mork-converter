@@ -49,17 +49,31 @@ class CsvOutput(Filter):
 csv_filter = CsvOutput(10100)
 
 class _TableWriter(object):
+    '''
+    _TableWriter is an abstraction to make it easy to write to either one file
+    per table or one file for all tables, with a header to delimit them.
+    Derived classes override _new_table(), _new_metatable(), and maybe close().
+    '''
     def __init__(self, opts):
         self.opts = opts
 
     def _new_table(self, namespace, oid):
+        '''
+        Override in derived classes. Returns the file handle to write to.
+        '''
         raise NotImplementedError()
 
     def _new_metatable(self, namespace, oid):
+        '''
+        Override in derived classes. Returns the file handle to write to.
+        '''
         raise NotImplementedError()
 
     def _write_rows(self, f, rows, headers):
         for (row_namespace, rowid, row) in rows:
+            # construct each output row by fetching the values corresponding to
+            # each header (and using an empty string if there is none), then
+            # prepending the row namespace and id.
             values = [row.get(header, '') for header in headers]
             values = [row_namespace, rowid] + values
             print >> f, self._format_csv_row(values)
@@ -69,8 +83,11 @@ class _TableWriter(object):
         assert isinstance(table, morkdb.MorkTable)
         f = self._new_table(namespace, oid)
 
+        # skip over empty tables:
         if len(table) == 0:
             return
+        # construct and output the table header line by fetching and sorting
+        # the headers, then prepending headers for namespace and id:
         headers = list(table.columnNames())
         headers.sort()
         print >> f, self._format_csv_row(['namespace', 'id'] + headers)
@@ -82,9 +99,18 @@ class _TableWriter(object):
         assert isinstance(metatable, morkdb.MorkMetaTable)
         f = self._new_metatable(namespace, oid)
 
+        # Since meta-tables contain both individual cells and rows, there's
+        # some tweaking to put it all into a CSV table. The cells get crammed
+        # into a single row. The rows have namespace and id at the front just
+        # like in normal tables, but for metatables with no rows these extra
+        # columns are suppressed.
+
+        # skip empty meta-tables:
         if len(metatable.cells) + len(metatable.rows) == 0:
             return
 
+        # extra_headers is for the rows, extra_values for the cells row.
+        # These have to kept even for the number of columns to be equal.
         if len(metatable.rows) == 0:
             extra_headers = []
             extra_values = []
@@ -105,6 +131,9 @@ class _TableWriter(object):
         self._write_rows(f, metatable.rows, headers)
 
     def open(self, filename):
+        '''
+        Simple helper function to use EncodingStream.
+        '''
         if filename == '-':
             return EncodingStream(self.opts.out_encoding, sys.stdout)
         else:
