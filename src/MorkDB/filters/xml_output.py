@@ -32,9 +32,13 @@ class XmlOutput(Filter):
     # deriving from Filter it's OK to not provide your own if there are no
     # options to add.
     def add_options(self, parser):
-        # In this case, there are no new options (xml is the default format).
-        # However, filters for doing output should usually set the out_format
-        # option value to whatever format they recognize. This way, the default
+        # out_format is an option used globally to choose output format. It's
+        # value is just a string identifier that some filter should recognize.
+        parser.add_option('--xml', dest='out_format', action='store_const',
+            const='xml', help='output XML (default)')
+
+        # Filters for doing output should usually set the out_format option
+        # value to whatever format they recognize. This way, the default
         # output format is selected from the highest priority filter
         # automatically.
         parser.set_defaults(out_format='xml')
