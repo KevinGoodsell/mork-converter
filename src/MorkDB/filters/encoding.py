@@ -54,7 +54,7 @@ class DecodeCharacters(Filter):
     def process(self, db, opts):
         for (table_namespace, table_id, table) in db.tables.items():
             byte_order = None
-            metatable = db.metaTables.get((table_namespace, table_id))
+            metatable = db.meta_tables.get((table_namespace, table_id))
             if metatable:
                 try:
                     byte_order = metatable['ByteOrder']

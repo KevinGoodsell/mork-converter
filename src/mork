@@ -5,11 +5,11 @@
 import sys
 import re
 
-minPythonVersion = (2, 4)
-if sys.version_info < minPythonVersion:
-    strVersion = '.'.join([str(part) for part in minPythonVersion])
+min_python_version = (2, 4)
+if sys.version_info < min_python_version:
+    str_version = '.'.join([str(part) for part in min_python_version])
     print >> sys.stderr, ('This script requires python %s or higher!' %
-                          strVersion)
+                          str_version)
     sys.exit(1)
 
 # Done with version checking. Get on with real work.
@@ -20,13 +20,13 @@ from MorkDB.filters import enumerate_filters, list_filters
 
 version = '2.0-prerelease'
 
-def printTokens(f):
+def print_tokens(f):
     import MorkDB.morklex as morklex
-    morklex.printTokens(f)
+    morklex.print_tokens(f)
 
-def printSyntaxTree(f):
+def print_syntax_tree(f):
     import MorkDB.morkyacc as morkyacc
-    tree = morkyacc.parseFile(f)
+    tree = morkyacc.parse_file(f)
     print tree
 
 _leading_space_matcher = re.compile(r'^\s+', re.MULTILINE)
@@ -46,12 +46,12 @@ def print_filters():
         if filt.__doc__:
             print _format_docstring(filt.__doc__, ' '*10)
 
-def processDatabase(f, filters, opts):
+def process_database(f, filters, opts):
     import MorkDB.morkdb as morkdb
     import MorkDB.morkyacc as morkyacc
 
-    tree = morkyacc.parseFile(f)
-    db = morkdb.MorkDatabase.fromAst(tree)
+    tree = morkyacc.parse_file(f)
+    db = morkdb.MorkDatabase.from_ast(tree)
 
     for filt in filters:
         filt.process(db, opts)
@@ -99,13 +99,13 @@ def main(args=None):
         f = open(arguments[0])
 
     if opts.out_format == 'tokens':
-        printTokens(f)
+        print_tokens(f)
     elif opts.out_format == 'syntax':
-        printSyntaxTree(f)
+        print_syntax_tree(f)
     elif opts.out_format == 'filters':
         print_filters()
     else:
-        processDatabase(f, filters, opts)
+        process_database(f, filters, opts)
 
     return 0
 

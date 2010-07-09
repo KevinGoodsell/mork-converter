@@ -304,7 +304,7 @@ yacc.yacc()
 def parse(data):
     return yacc.parse(data)
 
-def parseFile(f):
+def parse_file(f):
     if isinstance(f, basestring):
         f = open(f)
 

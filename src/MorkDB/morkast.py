@@ -13,13 +13,13 @@ class MorkAst(object):
         return '  ' + s.replace('\n', '\n  ')
 
     @staticmethod
-    def formatList(items):
+    def format_list(items):
         return '\n'.join(str(item) for item in items)
 
     @staticmethod
-    def indentList(name, items):
+    def indent_list(name, items):
         if items:
-            text = MorkAst.formatList(items)
+            text = MorkAst.format_list(items)
             return '%s:\n%s' % (name, MorkAst.indent(text))
         else:
             return '%s: (empty)' % name
@@ -32,7 +32,7 @@ class Database(MorkAst):
         return repr(self.items)
 
     def __str__(self):
-        return self.formatList(self.items)
+        return self.format_list(self.items)
 
 class Group(MorkAst):
     def __init__(self, groupid, items, commit):
@@ -45,7 +45,7 @@ class Group(MorkAst):
 
     def __str__(self):
         members = 'commit: %r\n%s' % (self.commit,
-            self.indentList('items', self.items))
+            self.indent_list('items', self.items))
         return 'Group %s:\n%s' % (self.groupid, self.indent(members))
 
 class Dict(MorkAst):
@@ -62,8 +62,8 @@ class Dict(MorkAst):
         return 'Dict(%r, %r)' % (self.aliases, self.meta)
 
     def __str__(self):
-        members = '%s\n%s' % (self.indentList('meta', self.meta),
-            self.indentList('aliases', self.aliases))
+        members = '%s\n%s' % (self.indent_list('meta', self.meta),
+            self.indent_list('aliases', self.aliases))
         return 'Dict:\n%s' % self.indent(members)
 
 class MetaDict(MorkAst):
@@ -77,7 +77,7 @@ class MetaDict(MorkAst):
         return 'MetaDict(%r)' % self.cells
 
     def __str__(self):
-        return self.indentList('MetaDict', self.cells)
+        return self.indent_list('MetaDict', self.cells)
 
 class Row(MorkAst):
     def __init__(self, rowid, cells=None, meta=None, trunc=False):
@@ -97,8 +97,8 @@ class Row(MorkAst):
 
     def __str__(self):
         members = 'trunc: %s\n%s\n%s' % (self.trunc,
-            self.indentList('meta', self.meta),
-            self.indentList('cells', self.cells))
+            self.indent_list('meta', self.meta),
+            self.indent_list('cells', self.cells))
         return 'Row %s:\n%s' % (self.rowid, self.indent(members))
 
 class MetaRow(Row):
@@ -109,7 +109,7 @@ class MetaRow(Row):
         return 'MetaRow(%r)' % self.cells
 
     def __str__(self):
-        return 'MetaRow:\n%s' % self.indentList('cells', self.cells)
+        return 'MetaRow:\n%s' % self.indent_list('cells', self.cells)
 
 class RowUpdate(MorkAst):
     def __init__(self, obj, method=''):
@@ -153,8 +153,8 @@ class Table(MorkAst):
 
     def __str__(self):
         members = 'trunc: %s\n%s\n%s' % (self.trunc,
-            self.indentList('meta', self.meta),
-            self.indentList('rows', self.rows))
+            self.indent_list('meta', self.meta),
+            self.indent_list('rows', self.rows))
         return 'Table %s:\n%s' % (self.tableid, self.indent(members))
 
 class MetaTable(MorkAst):
@@ -171,8 +171,8 @@ class MetaTable(MorkAst):
         return 'MetaTable(%r, %r)' % (self.cells, self.rows)
 
     def __str__(self):
-        members = '%s\n%s' % (self.indentList('cells', self.cells),
-                              self.indentList('rows', self.rows))
+        members = '%s\n%s' % (self.indent_list('cells', self.cells),
+                              self.indent_list('rows', self.rows))
         return 'MetaTable:\n%s' % self.indent(members)
 
 class Alias(MorkAst):

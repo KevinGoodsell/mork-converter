@@ -40,7 +40,7 @@ class CsvOutput(Filter):
 
         for (namespace, oid, table) in db.tables.items():
             writer.write_table(table, namespace, oid)
-            meta = db.metaTables.get((namespace, oid))
+            meta = db.meta_tables.get((namespace, oid))
             if meta is not None:
                 writer.write_meta_table(meta, namespace, oid)
 
@@ -88,7 +88,7 @@ class _TableWriter(object):
             return
         # construct and output the table header line by fetching and sorting
         # the headers, then prepending headers for namespace and id:
-        headers = list(table.columnNames())
+        headers = list(table.column_names())
         headers.sort()
         print >> f, self._format_csv_row(['namespace', 'id'] + headers)
 
@@ -119,7 +119,7 @@ class _TableWriter(object):
             extra_values = ['', '']
 
         # Header line
-        headers = list(metatable.columnNames())
+        headers = list(metatable.column_names())
         headers.sort()
         print >> f, self._format_csv_row(extra_headers + headers)
 

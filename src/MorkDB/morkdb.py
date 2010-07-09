@@ -21,7 +21,7 @@ class MorkDict(dict):
             self[col] = value
 
     @staticmethod
-    def fromAst(ast, db):
+    def from_ast(ast, db):
         assert isinstance(ast, morkast.Dict)
 
         # Create a MorkDict from ast.aliases
@@ -74,20 +74,20 @@ class MorkRowList(list): # [ ('namespace', 'id', MorkRow) ]
         raise ValueError('row (%s, %s) not found in table' % (namespace,
                                                               rowid))
 
-    def moveRow(self, namespace, rowid, newPos):
+    def move_row(self, namespace, rowid, new_pos):
         pos = self.index(namespace, rowid)
 
-        if newPos >= len(self):
-            warning.warn('during row move, newPos is outside of table range')
-            newPos = len(self) - 1
+        if new_pos >= len(self):
+            warning.warn('during row move, new_pos is outside of table range')
+            new_pos = len(self) - 1
 
         item = self[pos]
-        if pos < newPos:
-            self[pos:newPos+1] = self[pos+1:newPos+1] + [item]
+        if pos < new_pos:
+            self[pos:new_pos+1] = self[pos+1:new_pos+1] + [item]
         else:
-            self[newPos:pos+1] = [item] + self[newPos:pos]
+            self[new_pos:pos+1] = [item] + self[new_pos:pos]
 
-    def removeRow(self, namespace, rowid):
+    def remove_row(self, namespace, rowid):
         i = self.index(namespace, rowid)
         del self[i]
 
@@ -95,15 +95,15 @@ class MorkTable(MorkRowList):
     def __init__(self):
         MorkRowList.__init__(self)
 
-    def columnNames(self):
+    def column_names(self):
         columns = set()
         for (namespace, rowid, row) in self:
-            columns.update(row.columnNames())
+            columns.update(row.column_names())
 
         return columns
 
     @staticmethod
-    def fromAst(ast, db):
+    def from_ast(ast, db):
         assert isinstance(ast, morkast.Table)
 
         # Get id and namespace
@@ -121,7 +121,7 @@ class MorkTable(MorkRowList):
 
         assert len(ast.meta) <= 1, 'multiple meta-tables'
         if ast.meta:
-            MorkMetaTable.fromAst(ast.meta[0], db, namespace, oid)
+            MorkMetaTable.from_ast(ast.meta[0], db, namespace, oid)
 
         # Insert into table store
         db.tables[namespace, oid] = self
@@ -137,7 +137,7 @@ class MorkMetaTable(object):
         self.cells = {}
         self.rows = MorkRowList()
 
-    def columnNames(self):
+    def column_names(self):
         columns = set(self.cells.keys())
         for (ns, rowid, row) in self.rows:
             columns.update(row.keys())
@@ -156,17 +156,17 @@ class MorkMetaTable(object):
             raise KeyError(repr(column))
 
     @staticmethod
-    def fromAst(ast, db, tableNamespace, tableId):
+    def from_ast(ast, db, table_namespace, tableid):
         assert isinstance(ast, morkast.MetaTable)
 
         self = MorkMetaTable()
-        db._readRows(ast.rows, tableNamespace, self.rows)
+        db._readRows(ast.rows, table_namespace, self.rows)
 
         for cell in ast.cells:
             (column, value) = db._inflateCell(cell)
             self.cells[column] = value
 
-        db.metaTables[tableNamespace, tableId] = self
+        db.meta_tables[table_namespace, tableid] = self
 
         return self
 
@@ -174,15 +174,15 @@ class MorkRow(dict):
     def __init__(self):
         dict.__init__(self)
 
-    def columnNames(self):
+    def column_names(self):
         return self.keys()
 
     @staticmethod
-    def fromAst(ast, db, defaultNamespace=None):
+    def from_ast(ast, db, default_namespace=None):
         assert isinstance(ast, morkast.Row)
 
         # Get id and namespace
-        (oid, namespace) = db._dissectId(ast.rowid, defaultNamespace)
+        (oid, namespace) = db._dissectId(ast.rowid, default_namespace)
         assert namespace is not None, 'no namespace found for row'
 
         # Start with an empty row if trunc or if there's no row currently
@@ -207,20 +207,20 @@ class MorkRow(dict):
 
         return self
 
-def processMorkGroupAst(ast, db):
+def process_mork_group_ast(ast, db):
     assert isinstance(ast, morkast.Group)
 
     if not ast.commit:
         return
 
     for item in ast.items:
-        db.buildItem(item)
+        db.build_item(item)
 
 class MorkDatabase(object):
     def __init__(self):
         self.dicts = {} # { 'namespace': MorkDict }
         self.tables = MorkTableStore()
-        self.metaTables = MorkTableStore()
+        self.meta_tables = MorkTableStore()
         self.rows = MorkRowStore()
 
         self.dicts['a'] = MorkDict()
@@ -228,16 +228,16 @@ class MorkDatabase(object):
 
     # **** A bunch of utility methods ****
 
-    def _dictDeref(self, objref, defaultNamespace='c'):
+    def _dictDeref(self, objref, default_namespace='c'):
         assert isinstance(objref, morkast.ObjectRef)
 
-        (oid, namespace) = self._dissectId(objref.obj, defaultNamespace)
+        (oid, namespace) = self._dissectId(objref.obj, default_namespace)
 
         return self.dicts[namespace][oid]
 
-    def _dissectId(self, oid, defaultNamespace=None):
+    def _dissectId(self, oid, default_namespace=None):
         '''
-        Return ('objectId', 'namespace') or ('objectId', None) if the
+        Return ('objectid', 'namespace') or ('objectid', None) if the
         namespace cannot be determined.
         '''
         assert isinstance(oid, morkast.ObjectId)
@@ -246,7 +246,7 @@ class MorkDatabase(object):
         if isinstance(namespace, morkast.ObjectRef):
             namespace = self._dictDeref(namespace)
         elif namespace is None:
-            namespace = defaultNamespace
+            namespace = default_namespace
 
         return (oid.objectid, namespace)
 
@@ -278,15 +278,15 @@ class MorkDatabase(object):
 
         return (column, value)
 
-    def _readRows(self, rows, tableNamespace, rowList):
+    def _readRows(self, rows, table_namespace, row_list):
         for row in rows:
             # Each row could be morkast.Row, morkast.RowUpdate,
             # morkast.RowMove, or morkast.ObjectId
             if isinstance(row, morkast.RowMove):
-                (rowId, rowNamespace) = self._dissectId(row.rowid,
-                                                        tableNamespace)
+                (rowid, row_namespace) = self._dissectId(row.rowid,
+                                                        table_namespace)
 
-                rowList.moveRow(rowNamespace, rowId, row.position)
+                row_list.move_row(row_namespace, rowid, row.position)
                 continue
 
             update = '+'
@@ -295,20 +295,20 @@ class MorkDatabase(object):
                 row = row.obj
 
             if isinstance(row, morkast.ObjectId):
-                rowIdAst = row
+                row_id_ast = row
             elif isinstance(row, morkast.Row):
-                rowIdAst = row.rowid
-                MorkRow.fromAst(row, self, tableNamespace)
+                row_id_ast = row.rowid
+                MorkRow.from_ast(row, self, table_namespace)
             else:
                 raise StandardError('Bad row type: %s' % type(row))
 
-            (rowId, rowNamespace) = self._dissectId(rowIdAst, tableNamespace)
+            (rowid, row_namespace) = self._dissectId(row_id_ast, table_namespace)
 
             if update == '+':
-                rowList.append(rowNamespace, rowId,
-                               self.rows[rowNamespace, rowId])
+                row_list.append(row_namespace, rowid,
+                               self.rows[row_namespace, rowid])
             elif update == '-':
-                rowList.removeRow(rowNamespace, rowId)
+                row_list.remove_row(row_namespace, rowid)
             else:
                 raise NotImplementedError('Unhandled row update type: %r' %
                                           update)
@@ -316,13 +316,13 @@ class MorkDatabase(object):
     # **** Database builder ****
 
     _builder = {
-        morkast.Dict:  MorkDict.fromAst,
-        morkast.Row:   MorkRow.fromAst,
-        morkast.Table: MorkTable.fromAst,
-        morkast.Group: processMorkGroupAst,
+        morkast.Dict:  MorkDict.from_ast,
+        morkast.Row:   MorkRow.from_ast,
+        morkast.Table: MorkTable.from_ast,
+        morkast.Group: process_mork_group_ast,
     }
 
-    def buildItem(self, ast):
+    def build_item(self, ast):
         builder = self._builder.get(ast.__class__)
         assert builder is not None, ("unknown item with type '%s'" %
                                      ast.__class__)
@@ -330,12 +330,12 @@ class MorkDatabase(object):
         builder(ast, self)
 
     @staticmethod
-    def fromAst(ast):
+    def from_ast(ast):
         assert isinstance(ast, morkast.Database)
 
         self = MorkDatabase()
 
         for item in ast.items:
-            self.buildItem(item)
+            self.build_item(item)
 
         return self

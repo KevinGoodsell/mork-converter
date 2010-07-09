@@ -60,7 +60,7 @@ class XmlOutput(Filter):
         print >> f, '<morkxml>'
 
         for (namespace, oid, table) in db.tables.items():
-            meta = db.metaTables.get((namespace, oid))
+            meta = db.meta_tables.get((namespace, oid))
             self._write_table(f, namespace, oid, table, meta)
 
         print >> f, '</morkxml>'

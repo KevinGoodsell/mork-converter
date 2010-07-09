@@ -41,7 +41,7 @@ class StripMetaTables(Filter):
         if not opts.strip_meta:
             return
 
-        db.metaTables.clear()
+        db.meta_tables.clear()
 
 # Meta-tables might be necessary for other filters, so they get removed late.
 strip_metatables_filter = StripMetaTables(9900)

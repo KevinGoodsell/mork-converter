@@ -172,7 +172,7 @@ def t_ANY_error(t):
 
 lex.lex(reflags=re.MULTILINE)
 
-def printTokens(f):
+def print_tokens(f):
     if isinstance(f, basestring):
         f = open(f)
 
