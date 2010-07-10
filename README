@@ -102,6 +102,10 @@ This could come in handy if those techniques are giving incorrect
 results, or if you just want to see the original byte values for
 troubleshooting purposes.
 
+If you get nonsensical output in a browser history or form
+auto-completion history file, it may be because the byte-order of the
+UTF-16 text was not correctly determined. Try using --big-endian.
+
 About Mork Files
 ----------------
 Mork is a general-purpose text-based database format created for use in

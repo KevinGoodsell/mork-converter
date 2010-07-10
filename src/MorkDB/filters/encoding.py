@@ -38,8 +38,10 @@ _utf16_byte_order_decoders = {
 }
 def _utf16_decoder(value, opts, byte_order):
     if byte_order is None:
-        # Default to little-endian because that's how it works in test files.
-        byte_order = 'LE'
+        if opts.big_endian:
+            byte_order = 'BE'
+        else:
+            byte_order = 'LE'
 
     decoder = _utf16_byte_order_decoders.get(byte_order)
     assert decoder is not None, \
@@ -62,6 +64,9 @@ class DecodeCharacters(Filter):
         parser.add_option('--only-def-encoding', action='store_true',
             help="interpret all fields using --def-encoding, don't test "
                  "to determine the character encoding")
+        parser.add_option('-b', '--big-endian', action='store_true',
+            help="use big-endian as the default byte order for decoding "
+                 "UTF-16 fields (little-endian is the default)")
 
         parser.set_defaults(def_encoding='latin-1')
 
