@@ -90,8 +90,8 @@ The -d/--def-encoding option is more tricky. This determines what
 encoding will be assumed for database fields after other methods of
 determining the encoding fail. These "other methods" currently include
 looking up the field in a (small) table of fields with known encodings,
-then attempting to decode the field as UTF-8 (which hopefully will be
-unlikely to work properly with non-UTF-8 fields). Typically
+then attempting to decode the field as UTF-8 (which will hopefully fail
+rather than producing incorrect results for non-UTF-8 fields). Typically
 --def-encoding should be an 8-bit encoding like ISO-8859-1 (aka latin1,
 which is also the default) which will successfully decode any string it
 is given (though whether the result makes sense depends on the input).
@@ -175,6 +175,12 @@ Known Issues
   translation.
 * Many errors are currently reported with Python tracebacks. This is not
   very user-friendly.
+* There's no reliable way to determine character encodings for all
+  fields. Because of this, some fields will not get decoded correctly,
+  resulting in some strange characters in the result. This problem
+  primarily affects email header fields in .msf files. You might be able
+  to fix it with the --def-encoding option if you can determine the
+  correct encoding.
 * The parsing is rather slow. This seems to be an inherent issue with
   PLY.
 * The DecodeCharacters filter in encodings.py requires special knowledge
