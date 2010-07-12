@@ -2,7 +2,7 @@
 NOTE: THIS IS NOT COMPLETE! DO NOT RELY ON IT!
 ==============================================
 
-Mork File Format Description
+Mork 1.4 File Format Description
 Kevin Goodsell
 Sun, 20 Dec 2009 12:18:19 -0800
 
@@ -22,28 +22,31 @@ A Mork Row may include arbitrary Columns.
 While the basic structure of the data is fairly simple, the Mork format
 itself is confusing, all but impossible to decode by hand, and poorly
 documented. The documentation that exists seems to contradict the
-Mozilla implementation of Mork 1.4 (which seems to be the only version
-to ever actually be used -- web searches turn up 0 hits for Mork files
-with any other version number).
+Mozilla implementation of Mork 1.4, probably the only widely-used
+version (according to source comments and release dates, earlier
+versions were used only for very early milestone releases of the Mozilla
+Suite).
 
 2. File Layout
 
 2.1 Encoding
 
 Mork files are text, and appear to be limited to ASCII characters.
-However, most if not all example files I've looked at include this:
+However, all example files I've looked at include this:
 
 // (f=iso-8859-1)
 
-Which appears to identify a text encoding for some part of the file. The
-double-slashes indicate that this is a comment, so it's not clear if it
-should affect parsing or not (comments generally don't).
+This identifies a character encoding, but doesn't seem to have any
+functional significance. The double-slashes indicate that it is a
+comment, so the parser ignores it. The text of the comment is hard-coded
+in morkWriter.cpp[2], so the character encoding it gives can never be
+anything other than iso-8859-1. This may simply be a hint to human
+readers.
 
 Mork files can indicate end-of-line using several conventions. According
-to the documentation (XXX cite this), any of the combinations 0x0A, 0x0D,
-0x0A0D, and 0x0D0A are allowed. This covers the three common conventions
-(Unix, DOS/Windows, and Macintosh) and the uncommon 'newline carriage
-return'.
+to the documentation[1], any of the combinations 0x0A, 0x0D, 0x0A0D, and
+0x0D0A are allowed. This covers the three common conventions (Unix,
+DOS/Windows, and Macintosh) and the uncommon 'newline carriage-return'.
 
 2.2 Syntax Elements
 
@@ -51,16 +54,20 @@ return'.
 
 Mork files can include comments using C++ comment syntax. Two forward
 slashes indicate the beginning of a comment which continues to the end
-of the line. It's important to note however, that this syntax is only
-considered a comment when it appears outside of a Cell (XXX check this).
+of the line. While this seems to be undocumented, the source code
+(morkParser.cpp[2]) indicates that C-style comments are also permitted,
+and may be nested. These appear to be unused in practice.
+
+There are some places where comments are not recognized. The only
+example I know of (and the only one that's likely to be relevant in real
+Mork files) is in Cell and Alias values.
 
 Mork files begin with the following "magic" identifier in the form of a
 comment:
 
 // <!-- <mdb:mork:z v="1.4"/> -->
 
-The 1.4 would of course be different for other Mork versions (though no
-other versions seem to exist in the wild).
+The 1.4 would of course be different for other Mork versions.
 
 2.2.2 Dictionaries
 
@@ -70,42 +77,143 @@ optimization and does not add anything functional. It does however add
 substantial complexity to the files.
 
 Dicts are delimited with "angle brackets" (less-than and greater-than
-symbols) and contain simple Cells, and optionally a Meta-Dict. Cell
-Columns in Dicts are alway hexadecimal IDs and always greater than 7F
-(XXX verify). Values are arbitrary. The IDs are later used as
-substitutes for the corresponding Values when they are needed in
-non-Dict Cells.
+symbols) and contain Aliases, and optionally a Meta-Dict.
 
 Example:
 
-<(80=arbitrary text)(81=http//example.com)
+<(80=arbitrary text)(81=http://example.com)
 (8C=(Parens are allowed, but a closing paren needs to be escaped.\))>
 
 In this example, note that the '//' does not introduce a comment, and a
 backslash character is used as an escape character to allow a closing
 parenthesis to appear in the Value.
 
-2.2.3 Cells
+Each Dict defines aliases for a particular namespace or scope. In
+principle there can be an arbitrary number of scopes, but in practice
+only two are used: 'a' and 'c', which are abbreviations for 'atom' and
+'column', respectively. The 'a' scope defines aliases used in Cell
+values, and the 'c' scope defines aliases used in Cell columns. The
+scope for a Dict is given in the Meta-Dict, or else defaults to 'a'.
 
-Cells are delimited by parentheses and are used in several places in
-Mork with slightly different meanings. They are crucial parts of Rows
-and Dicts, and also appear in all of the Meta-types. They are basically
-a type of key-value pair, though the meaning of the key depends on the
-context, and the representation can vary slightly.
+Typical Mork files have only one Dict for the 'c' scope (the first thing
+in the file following the magic line), and several for the 'a' scope.
+Each Dict encountered in the file just updates the in-memory Dict with
+new aliases.
 
-The simple Cells that appear in Dicts have the form '(' hex-id '='
-string ')'. This simply makes the hex ID available to use as a
-substitute for the string.
+2.2.3 Aliases
 
-Outside of Dicts, Cells have a more general form. 
+Aliases and Cells are very similar, but Aliases are specific to Dicts.
+Aliases have this form:
 
-2.2.4 Rows
+(A3=Arbitrary text)
 
-2.2.5 Tables
+The left side of the '=' sign is a hexadecimal integer, and the right
+side can be any text (though some characters have to be represented with
+escape sequences). This makes the hexadecimal value an alias for the
+text on the right.
 
-2.2.6 Meta-Dicts, Meta-Tables, and Meta-Rows
+In the file morkParser.cpp[2], function ReadAlias, there's another type
+or Alias that seems to be unused in practice, and probably not fully
+supported by the code. It looks something like:
 
-2.2.7 Groups (AKA Transactions)
+(A3<f=c>=Arbitrary text) or (A3<f=^BF>=Arbitrary text)
+
+This is probably intended to specify an alternate character encoding for
+the Alias value, but again, it appears to be unused and not fully
+supported.
+
+2.2.4 Cells
+
+Cells function as key-value pairs. They form the basis of Mork Rows,
+where the key represents a column name and the value represents the data
+in that column of the row. They also define the meta-data in
+Meta-Tables, Meta-Rows, and Meta-Dicts.
+
+Like Aliases, Cells are delimited my parentheses. The most basic form of
+a Cell looks pretty much like an Alias:
+
+(keyName=arbitrary value text)
+
+Here the key is 'keyName' and the value is 'arbitrary value text'. It's
+also passible for the value to be empty:
+
+(keyName=)
+
+Both the key and the value can optionally be replaced with an alias
+previously defined in a Dict. When the key is replaced, it looks like
+this:
+
+(^92=arbitrary value text)
+
+When the value is replaced, the '=' sign is dropped:
+
+(keyName^A5)
+
+It's common to see a lot of cells with both the key and value replaced
+by aliases:
+
+(^92^A5)
+
+When an alias is used for the key, it is looked up in the 'c' scope
+(this was described in the 'Dictionaries' section). For the value, it is
+looked up in the 'a' scope.
+
+It's also possible for alias scopes to be given explicitely, which looks
+like this:
+
+(^92:c^A5:a)
+(^92:c^A5)
+(^92^A5:a)
+
+These are all equivalent to the previous example because the scopes used
+are the same as the default scopes.
+
+Confusingly, scopes can also be replaced with aliases:
+
+(^92:^E8^A5)
+
+A scope alias is looked up in the 'c' scope (XXX I think). It's not
+clear if an explicit scope can be given for a scope alias, or how deep
+the rabbit-hole can go if this is allowed.
+
+2.2.5 Rows
+
+Rows are the typical container for Cells. In the Mork file syntax they
+are delimited with square brackets. A simple Row might look like this:
+
+[4(^23^A8)(^24^28)]
+
+Here the 4 is the hexidecimal identifier for the row, which contains two
+Cells (which represent the data in two columns of the row).
+
+It's entirely possible for the Mork file to contain multiple Rows with
+same identifier. This updates the in-memory Row with new or replacement
+items.
+
+Rows will often appear inside Tables, but not always. A Row outside of
+any Table could be inserted into a Table later, or it could be an update
+for a Row that is already in a Table.
+
+The Row identifier belongs to a particular namespace or scope. This is
+pretty much like the scopes that Dict aliases occupy, but row namespaces
+tend to be more descriptive. Here's an example:
+
+< <(a=c)> (80=ns:addrbk:db:row:scope:data:all)>
+[4:^80(^23^A8)(^24^28)]
+
+When a Row identifier lacks an explicit scope, it inherits the scope
+from the table that it's contained in. (XXX Verify this, and is there a
+default for not in a table?)
+
+2.2.5.1 Truncated Rows
+2.2.5.2 Deleted Rows
+2.2.5.3 Moved Rows
+
+2.2.6 Tables
+
+2.2.7 Meta-Dicts, Meta-Tables, and Meta-Rows
+
+2.2.8 Groups (AKA Transactions)
 
 3. Character Escaping
 
@@ -118,3 +226,7 @@ Outside of Dicts, Cells have a more general form.
 4.3 Meta-Data
 
 5. Application-Specific Notes
+
+[1] https://developer.mozilla.org/En/Mork_Structure
+[2] Source references can be looked up here:
+http://mxr.mozilla.org/mozilla1.8/source/db/mork/src/
