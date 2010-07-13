@@ -16,6 +16,7 @@
 
 import warnings
 import codecs
+import re
 
 from filterbase import Filter
 
@@ -108,7 +109,137 @@ class DecodeCharacters(Filter):
 
                 row[column] = decoder(value, opts, byte_order)
 
-decoding_filter = DecodeCharacters(2010)
+decoding_filter = DecodeCharacters(-2010)
+
+def _decode_utf8(opts, byte_order, row_namespace, column, value):
+    try:
+        return value.decode('utf-8')
+    except UnicodeError:
+        return None
+
+_known_utf16 = set([
+    ('ns:history:db:row:scope:history:all', 'Name'),
+    ('ns:formhistory:db:row:scope:formhistory:all', 'Name'),
+    ('ns:formhistory:db:row:scope:formhistory:all', 'Value'),
+])
+def _decode_known_utf16(opts, byte_order, row_namespace, column, value):
+    if (row_namespace, column) not in _known_utf16:
+        return None
+
+    if byte_order in ('BE', 'BBBB'):
+        codec = 'utf-16-be'
+    elif byte_order in ('LE', 'llll'):
+        codec = 'utf-16-le'
+    else:
+        assert False, 'Invalid byte order: %r' % byte_order
+
+    return value.decode(codec)
+
+# This matches C1 control characters, which are used in ISO 8859, but the
+# values are assigned to normal characters in Windows codepages. Therefore
+# when they are found we guess that the text probably using a Windows codepage.
+_control_matcher = re.compile(ur'[\x80-\x9f]')
+def _decode_iso_8859(opts, byte_order, row_namespace, column, value):
+    try:
+        decoded = value.decode('iso-8859-1')
+    except UnicodeError:
+        return None
+
+    if _control_matcher.search(decoded):
+        return None
+
+    return decoded
+
+def _decode_windows(opts, byte_order, row_namespace, column, value):
+    try:
+        return value.decode('windows-1252')
+    except UnicodeError:
+        return None
+
+class NewDecodeCharacters(Filter):
+    def __init__(self, order):
+        self.mork_filter_order = order
+
+    def add_options(self, parser):
+        parser.add_option('-b', '--byte-order',
+            choices=['big', 'little', 'b', 'l'],
+            help='default byte order for decoding multi-byte fields (big or '
+                 'little)')
+
+    def process(self, db, opts):
+        for (table_namespace, table_id, table) in db.tables.items():
+            byte_order = self._find_byte_order(db, opts, table_namespace,
+                                               table_id)
+            self._filter_table(opts, table, byte_order)
+
+    def _find_byte_order(self, db, opts, table_namespace, table_id):
+        byte_order = None
+        metatable = db.meta_tables.get((table_namespace, table_id))
+        if metatable:
+            try:
+                byte_order = metatable['ByteOrder']
+            except KeyError:
+                pass
+
+        if byte_order is None and opts.byte_order:
+            if opts.byte_order in ('b', 'big'):
+                byte_order = 'BE'
+            else:
+                byte_order = 'LE'
+
+        if byte_order is None:
+            table = db.tables.get((table_namespace, table_id))
+            byte_order = self._guess_byte_order(opts, table)
+
+        return byte_order
+
+    def _guess_byte_order(self, opts, table):
+        counts = {'BE' : 0, 'LE' : 0}
+        for (row_namespace, row_id, row) in table:
+            for (column, value) in row.items():
+                if (row_namespace, column) not in _known_utf16:
+                    continue
+
+                warnings.warn('guessing byte order, consider using -b option')
+
+                # Fewest unique Most Significant Bytes is a reasonable guess
+                be_msbs = set(value[::2]) # even indices
+                le_msbs = set(value[1::2]) # odd indices
+                if len(be_msbs) < len(le_msbs):
+                    counts['BE'] += 1
+                elif len(be_msbs) > len(le_msbs):
+                    counts['LE'] += 1
+
+        counts = [(count, val) for (val, count) in counts.items()]
+        counts.sort()
+        return counts[-1][1]
+
+    def _filter_table(self, opts, table, byte_order):
+        for (row_namespace, row_id, row) in table:
+            for (column, value) in row.items():
+                if isinstance(value, unicode):
+                    continue
+
+                row[column] = self._decode_field(opts, byte_order,
+                                                 row_namespace, column, value)
+
+    _decoders = [
+        _decode_known_utf16,
+        _decode_utf8,
+        _decode_iso_8859,
+        _decode_windows,
+    ]
+
+    def _decode_field(self, opts, byte_order, row_namespace, column, value):
+        for decoder in self._decoders:
+            decoded_val = decoder(opts, byte_order, row_namespace, column,
+                                  value)
+            if decoded_val is not None:
+                return decoded_val
+
+        assert False, 'failed to decode %r' % value
+
+new_decoding_filter = NewDecodeCharacters(2010)
 
 # Support for writing encoded streams while taking care of things like
 # Byte-Order Marks.
