@@ -96,6 +96,10 @@ def _decode_final(opts, byte_order, row_namespace, column, value):
         return None
 
 class DecodeCharacters(Filter):
+    '''
+    Filter to convert fields to unicode using user-specified options, known
+    encodings, UTF-8, ISO 8859 char sets, or a last-ditch char set.
+    '''
     def __init__(self, order):
         self.mork_filter_order = order
 
