@@ -23,6 +23,22 @@ from filterbase import Filter
 
 # Decoders:
 
+def _decode_from_opts(opts, byte_order, row_namespace, column, value):
+    '''
+    Decoder that uses user-supplied encodings for specific fields.
+    '''
+    if isinstance(opts.force_encoding, list):
+        # convert to dict:
+        kv = [((row_ns, col), enc) for (row_ns, col, enc)
+              in opts.force_encoding]
+        opts.force_encoding = dict(kv)
+
+    encoding = opts.force_encoding.get((row_namespace, column))
+    if encoding is None:
+        return None
+
+    return value.decode(encoding)
+
 def _decode_utf8(opts, byte_order, row_namespace, column, value):
     '''
     Decoder that attempts UTF-8, and gives up on error.
@@ -97,9 +113,13 @@ class DecodeCharacters(Filter):
         decode_group.add_option('-f', '--fallback-charset', metavar='CHARSET',
             help='select the character set used for field decoding when all '
                  'others fail (default: windows-1252)')
+        decode_group.add_option('--force-encoding',
+            metavar='ROW_NAMESPACE COLUMN ENCODING', nargs=3, action='append',
+            help='force the use of ENCODING for specified fields')
 
         parser.add_option_group(decode_group)
-        parser.set_defaults(iso_8859='1', fallback_charset='windows-1252')
+        parser.set_defaults(iso_8859='1', fallback_charset='windows-1252',
+                            force_encoding=[])
 
     def process(self, db, opts):
         for (table_namespace, table_id, table) in db.tables.items():
@@ -177,6 +197,7 @@ class DecodeCharacters(Filter):
                                                  row_namespace, column, value)
 
     _decoders = [
+        _decode_from_opts,
         _decode_known_utf16,
         _decode_utf8,
         _decode_iso_8859,
