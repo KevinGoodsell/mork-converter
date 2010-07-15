@@ -17,101 +17,16 @@
 import warnings
 import codecs
 import re
+import optparse
 
 from filterbase import Filter
 
-# Character decoders. Unused parameters are to keep the interface consistent.
-def _default_decoder(value, opts, byte_order):
-    return value.decode(opts.def_encoding)
-
-def _utf8_fallback_decoder(value, opts, byte_order):
-    try:
-        return value.decode('utf-8')
-    except UnicodeError:
-        return _default_decoder(value, opts, byte_order)
-
-_utf16_byte_order_decoders = {
-    # Byte order tags from the ByteOrder meta-table field.
-    'llll' : codecs.getdecoder('utf-16-le'),
-    'LE'   : codecs.getdecoder('utf-16-le'),
-    'BBBB' : codecs.getdecoder('utf-16-be'),
-    'BE'   : codecs.getdecoder('utf-16-be'),
-}
-def _utf16_decoder(value, opts, byte_order):
-    if byte_order is None:
-        if opts.big_endian:
-            byte_order = 'BE'
-        else:
-            byte_order = 'LE'
-
-    decoder = _utf16_byte_order_decoders.get(byte_order)
-    assert decoder is not None, \
-        'Unknown byte order: %s' % byte_order
-
-    return decoder(value)[0]
-
-class DecodeCharacters(Filter):
-    '''
-    Converts fields to unicode objects. Tries to interpret using known
-    encodings, or tries to guess, or uses the --def-encoding option.
-    '''
-    def __init__(self, order):
-        self.mork_filter_order = order
-
-    def add_options(self, parser):
-        parser.add_option('-d', '--def-encoding', metavar='ENC',
-            help="use ENC as the character encoding when no other encoding "
-                 "can be determined")
-        parser.add_option('--only-def-encoding', action='store_true',
-            help="interpret all fields using --def-encoding, don't test "
-                 "to determine the character encoding")
-        parser.add_option('-b', '--big-endian', action='store_true',
-            help="use big-endian as the default byte order for decoding "
-                 "UTF-16 fields (little-endian is the default)")
-
-        parser.set_defaults(def_encoding='latin-1')
-
-    def process(self, db, opts):
-        for (table_namespace, table_id, table) in db.tables.items():
-            byte_order = None
-            metatable = db.meta_tables.get((table_namespace, table_id))
-            if metatable:
-                try:
-                    byte_order = metatable['ByteOrder']
-                except KeyError:
-                    pass
-
-            self._filter_table(table, byte_order, opts)
-
-    # Decoders for specific fields where guessing won't work.
-    _decoders = {
-        # {('row namespace', 'column name') : decoder_function}
-        ('ns:history:db:row:scope:history:all', 'Name') :
-            _utf16_decoder,
-        ('ns:formhistory:db:row:scope:formhistory:all', 'Name') :
-            _utf16_decoder,
-        ('ns:formhistory:db:row:scope:formhistory:all', 'Value') :
-            _utf16_decoder,
-    }
-
-    def _filter_table(self, table, byte_order, opts):
-        for (row_namespace, row_id, row) in table:
-            for (column, value) in row.items():
-                if isinstance(value, unicode):
-                    continue
-
-                if opts.only_def_encoding:
-                    decoder = _default_decoder
-                else:
-                    decoder = self._decoders.get((row_namespace, column))
-                    if decoder is None:
-                        decoder = _utf8_fallback_decoder
-
-                row[column] = decoder(value, opts, byte_order)
-
-decoding_filter = DecodeCharacters(-2010)
+# Decoders:
 
 def _decode_utf8(opts, byte_order, row_namespace, column, value):
+    '''
+    Decoder that attempts UTF-8, and gives up on error.
+    '''
     try:
         return value.decode('utf-8')
     except UnicodeError:
@@ -123,6 +38,9 @@ _known_utf16 = set([
     ('ns:formhistory:db:row:scope:formhistory:all', 'Value'),
 ])
 def _decode_known_utf16(opts, byte_order, row_namespace, column, value):
+    '''
+    Decoder for fields known to be UTF-16.
+    '''
     if (row_namespace, column) not in _known_utf16:
         return None
 
@@ -135,36 +53,53 @@ def _decode_known_utf16(opts, byte_order, row_namespace, column, value):
 
     return value.decode(codec)
 
-# This matches C1 control characters, which are used in ISO 8859, but the
-# values are assigned to normal characters in Windows codepages. Therefore
-# when they are found we guess that the text probably using a Windows codepage.
 _control_matcher = re.compile(ur'[\x80-\x9f]')
 def _decode_iso_8859(opts, byte_order, row_namespace, column, value):
+    '''
+    Decoder that uses one of the ISO-8859 encodings, and fails if the result
+    contains C1 control characters (based on the assumption that this means
+    it's the wrong characer set).
+    '''
+    # Skip ISO-8859 decoding if user asks or if bytes are found that would
+    # decode as control characters.
+    if opts.iso_8859 == '' or _control_matcher.search(value):
+        return None
+
     try:
-        decoded = value.decode('iso-8859-1')
+        return value.decode('iso-8859-%s' % opts.iso_8859)
     except UnicodeError:
         return None
 
-    if _control_matcher.search(decoded):
-        return None
-
-    return decoded
-
-def _decode_windows(opts, byte_order, row_namespace, column, value):
+def _decode_final(opts, byte_order, row_namespace, column, value):
+    '''
+    Last-ditch decoder.
+    '''
     try:
-        return value.decode('windows-1252')
+        return value.decode(opts.fallback_charset)
     except UnicodeError:
         return None
 
-class NewDecodeCharacters(Filter):
+class DecodeCharacters(Filter):
     def __init__(self, order):
         self.mork_filter_order = order
 
     def add_options(self, parser):
-        parser.add_option('-b', '--byte-order',
+        decode_group = optparse.OptionGroup(parser, 'Field Decoding Options')
+        decode_group.add_option('-b', '--byte-order',
             choices=['big', 'little', 'b', 'l'],
             help='default byte order for decoding multi-byte fields (big or '
                  'little)')
+        iso_parts = self._iso_8895_parts()
+        decode_group.add_option('-i', '--iso-8859', metavar='N',
+            choices=iso_parts + [''],
+            help='select the ISO-8859 character set for fields in the input '
+                 'file (default: 1, available: %s)' % ', '.join(iso_parts))
+        decode_group.add_option('-f', '--fallback-charset', metavar='CHARSET',
+            help='select the character set used for field decoding when all '
+                 'others fail (default: windows-1252)')
+
+        parser.add_option_group(decode_group)
+        parser.set_defaults(iso_8859='1', fallback_charset='windows-1252')
 
     def process(self, db, opts):
         for (table_namespace, table_id, table) in db.tables.items():
@@ -172,7 +107,23 @@ class NewDecodeCharacters(Filter):
                                                table_id)
             self._filter_table(opts, table, byte_order)
 
+    def _iso_8895_parts(self):
+        result = []
+        for part in range(1, 17):
+            try:
+                codecs.lookup('iso-8859-%d' % part)
+            except LookupError:
+                continue
+
+            result.append(str(part))
+
+        return result
+
     def _find_byte_order(self, db, opts, table_namespace, table_id):
+        '''
+        Determine byte order by meta-table data or options. Failing that,
+        fall back on guessing.
+        '''
         byte_order = None
         metatable = db.meta_tables.get((table_namespace, table_id))
         if metatable:
@@ -195,9 +146,11 @@ class NewDecodeCharacters(Filter):
 
     def _guess_byte_order(self, opts, table):
         counts = {'BE' : 0, 'LE' : 0}
+        # Check each row and column, testing for likely byte order
         for (row_namespace, row_id, row) in table:
             for (column, value) in row.items():
                 if (row_namespace, column) not in _known_utf16:
+                    # Not a UTF-16 field
                     continue
 
                 warnings.warn('guessing byte order, consider using -b option')
@@ -227,7 +180,7 @@ class NewDecodeCharacters(Filter):
         _decode_known_utf16,
         _decode_utf8,
         _decode_iso_8859,
-        _decode_windows,
+        _decode_final,
     ]
 
     def _decode_field(self, opts, byte_order, row_namespace, column, value):
@@ -239,7 +192,7 @@ class NewDecodeCharacters(Filter):
 
         assert False, 'failed to decode %r' % value
 
-new_decoding_filter = NewDecodeCharacters(2010)
+new_decoding_filter = DecodeCharacters(2010)
 
 # Support for writing encoded streams while taking care of things like
 # Byte-Order Marks.
