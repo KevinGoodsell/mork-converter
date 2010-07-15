@@ -17,7 +17,6 @@
 
 # Do python version checking up front.
 import sys
-import re
 
 min_python_version = (2, 4)
 if sys.version_info < min_python_version:
@@ -29,6 +28,7 @@ if sys.version_info < min_python_version:
 # Done with version checking. Get on with real work.
 
 import optparse
+import re
 
 from MorkDB.filters import enumerate_filters, list_filters
 
