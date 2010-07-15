@@ -91,7 +91,8 @@ class ConvertTimes(Filter):
         },
 
         'ns:msg:db:row:scope:msgs:all' : {
-            'date' : _convert_hex_seconds,
+            'date'         : _convert_hex_seconds,
+            'dateReceived' : _convert_hex_seconds,
         },
 
         'm' : {
