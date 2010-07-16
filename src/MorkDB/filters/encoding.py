@@ -114,7 +114,7 @@ class DecodeCharacters(Filter):
             choices=iso_parts + [''],
             help='select the ISO-8859 character set for fields in the input '
                  'file (default: 1, available: %s)' % ', '.join(iso_parts))
-        decode_group.add_option('-f', '--fallback-charset', metavar='CHARSET',
+        decode_group.add_option('-f', '--fallback-charset', metavar='ENCODING',
             help='select the character set used for field decoding when all '
                  'others fail (default: windows-1252)')
         decode_group.add_option('--force-encoding',

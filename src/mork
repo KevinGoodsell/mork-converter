@@ -75,8 +75,8 @@ def parse_arguments(args, filters):
         version='Mork converter by Kevin Goodsell, version %s' % version)
 
     parser.add_option('-o', '--outname', help='output file or dir name')
-    parser.add_option('-e', '--out-encoding', metavar='ENC',
-        help="use ENC as the output encoding (e.g., utf-16)")
+    parser.add_option('-e', '--out-encoding', metavar='ENCODING',
+        help="use ENCODING as the output encoding (e.g., utf-16)")
 
     for f in filters:
         f.add_options(parser)
