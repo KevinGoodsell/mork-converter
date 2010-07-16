@@ -10,8 +10,10 @@ Version 2.0
   unhandled cases.
 * Works harder to identify the character encoding used for each field.
 * Allows character encodings to be supplied on the command line, both
-  for the output file and for the default interpretation of input
-  database fields.
+  for the output file and for the interpretation of input database
+  fields.
+* The date/time filter now recognizes one additional type of time field
+  that was missing before.
 * Switching to GPL2 for the license.
 
 Version 1.1
