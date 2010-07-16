@@ -78,7 +78,7 @@ list of the standard encoding names here:
 http://docs.python.org/library/codecs.html#standard-encodings
 
 The options that deal with character encodings require some
-clarification. The most basic one  is the -e/--out-encoding option,
+clarification. The most basic one is the -e/--out-encoding option,
 which is pretty straight-forward. It determines the encoding used for
 the output file (UTF-8 by default). Any of the Unicode encodings (e.g.
 utf-8, utf-16, utf-32) should typically work. Encodings that only
@@ -86,25 +86,47 @@ support a subset of Unicode (such as the ISO-8859 family of encodings)
 may or may not work depending on what characters appear in the input
 database.
 
-The -d/--def-encoding option is more tricky. This determines what
-encoding will be assumed for database fields after other methods of
-determining the encoding fail. These "other methods" currently include
-looking up the field in a (small) table of fields with known encodings,
-then attempting to decode the field as UTF-8 (which will hopefully fail
-rather than producing incorrect results for non-UTF-8 fields). Typically
---def-encoding should be an 8-bit encoding like ISO-8859-1 (aka latin1,
-which is also the default) which will successfully decode any string it
-is given (though whether the result makes sense depends on the input).
+The -b/--byte-order option let's you specify the byte order (or
+'endianness') of UTF-16 fields in the input. It takes an argument which
+may be 'big' or 'little' (corresponding to most-significant-byte first
+and least-significant-byte first, respectively). You can probably ignore
+this option unless you get a warning that suggests using it and see
+nonsense in the output file.
 
-The --only-def-encoding option disables the "other methods" described
-above and goes straight to the --def-encoding encoding for all fields.
-This could come in handy if those techniques are giving incorrect
-results, or if you just want to see the original byte values for
-troubleshooting purposes.
+When interpreting fields in the input, a few different attempts are made
+to guess the encoding. First, a list of fields known to be UTF-16 is
+used. If the field is not in that list, an attempt is made to decode the
+field as UTF-8. This usually works, because UTF-8 is compatible with
+ASCII. If UTF-8 decoding fails, the next step is to try an ISO 8859
+character set. This always works (since any arbitrary byte sequence can
+be considered valid ISO 8859), but isn't always correct. If the result
+contains certain characters that are only used as control codes, this is
+taken to mean the ISO 8859 decoding is wrong. In this case, a final
+attempt is made to decode the field using a user-specifiable character
+set that defaults to windows-1252.
 
-If you get nonsensical output in a browser history or form
-auto-completion history file, it may be because the byte-order of the
-UTF-16 text was not correctly determined. Try using --big-endian.
+Both the ISO 8859 character set and the final character set can be
+provided on the command line, using the -i/--iso-8859 option and
+-f/--fallback-charset option, respectively. --iso-8859 takes a single
+integer argument to select the specific ISO 8859 character set (the
+default is '1', the Latin 1 character set). It can also accept an empty
+string to indicate that ISO 8859 should not be used. --fallback-charset
+can take any character set available in you Python installation, but
+some obviously make more sense than others. utf-8 would be a bad choice,
+since the fallback encoding is only used after UTF-8 fails. An ISO 8859
+character set may make sense, as this would allow fields with control
+codes to be considered valid (in such a case it would also make sense to
+use --iso-8859 "" in order to skip the first attempt at using ISO 8859).
+
+In general, --fallback-charset should be something that decodes all
+possible byte sequences (meaning all bytes represent valid characters).
+
+When all else fails, there is also a --force-encoding option. This
+option can be given multiple times, and requires three arguments. The
+first two arguments specify a row namespace and a column name, which
+makes the option apply to the fields in the specified column in the
+specified rows. The third argument is the character encoding to use for
+the given fields. This bypasses all the other field decoding attempts.
 
 About Mork Files
 ----------------
@@ -139,12 +161,11 @@ The output from this tool depends on the options selected, but will
 typically contain a set of tables corresponding to the tables in the
 Mork file, each identified by the table namespace and ID. Each table's
 meta-table is also included, and may contain information useful for
-interpreting the table contents.  Meta-tables seem to always contain a
+interpreting the table contents. Meta-tables seem to always contain a
 'k' field that identifies the 'kind' of the table, and a 's' field for
 the table 'status', which is often simply '9'. A digit in the status
-gives the priority of the table.  A 'u' or a 'v' indicate that the table
-is unique or verbose, respectively (these features may be unused in
-practice).
+gives the priority of the table. A 'u' or a 'v' indicate that the table
+is unique or verbose, respectively.
 
 Rows in a table are not uniform. Columns that appear in one row may not
 appear in others. This makes the output a little odd, especially in
@@ -178,16 +199,14 @@ Known Issues
 * There's no reliable way to determine character encodings for all
   fields. Because of this, some fields will not get decoded correctly,
   resulting in some strange characters in the result. This problem
-  primarily affects email header fields in .msf files. You might be able
-  to fix it with the --def-encoding option if you can determine the
-  correct encoding.
+  primarily affects email header fields in .msf files. The encoding
+  options are intended to help resolve this.
 * The parsing is rather slow. This seems to be an inherent issue with
   PLY.
 * The DecodeCharacters filter in encodings.py requires special knowledge
-  of what character encodings are used for different fields, unless the
-  encoding can be correctly guessed. There may be missing fields that
-  need to be added to the filter in order for it to correctly decode
-  fields of that type.
+  of what fields in the database use UTF-16 encoding.There may be
+  missing fields that need to be added to the filter in order for it to
+  correctly decode fields of that type.
 * A similar warning applies to various other filters: some of them
   (ConvertTimes, DecodeMimeHeaders) require a list of the fields that the
   filter conversion will be applied to. This list is found in the filter
