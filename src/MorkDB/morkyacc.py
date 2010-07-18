@@ -19,8 +19,14 @@ morkyacc.py -- PLY-based parser for Mork database files.
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import ply.yacc as yacc
 import warnings
+import os
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
+import ply.yacc as yacc
 
 from MorkDB.morklex import tokens
 import MorkDB.morkast as morkast
@@ -320,7 +326,36 @@ def parse(data):
     return yacc.parse(data)
 
 def parse_file(f):
+    filename = None
     if isinstance(f, basestring):
-        f = open(f)
+        filename = f
+        # Read a cached parse tree if possible
+        tree = _get_parse_tree(filename)
+        if tree:
+            return tree
 
-    return parse(f.read())
+        f = open(filename)
+
+    tree = parse(f.read())
+    if filename:
+        # Cache the parse tree for later use
+        tree_name = filename + '.parse-tree'
+        try:
+            pickle.dump(tree, open(tree_name, 'w'), pickle.HIGHEST_PROTOCOL)
+        except OSError:
+            pass
+
+    return tree
+
+def _get_parse_tree(filename):
+    tree_name = filename + '.parse-tree'
+    try:
+        tree_st = os.stat(tree_name)
+        mork_st = os.stat(filename)
+    except OSError:
+        return None
+
+    if tree_st.st_mtime > mork_st.st_mtime:
+        return pickle.load(open(tree_name))
+
+    return None

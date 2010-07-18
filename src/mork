@@ -110,7 +110,7 @@ def main(args=None):
     if len(arguments) == 0:
         f = sys.stdin
     else:
-        f = open(arguments[0])
+        f = arguments[0]
 
     if opts.out_format == 'tokens':
         print_tokens(f)
