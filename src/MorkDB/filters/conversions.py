@@ -28,6 +28,20 @@ class _SignedInt32(_Int):
 
         return unicode(ival)
 
+class _HierDelim(_Int):
+    def __init__(self):
+        _Int.__init__(self, 16)
+
+    def convert(self, opts, value):
+        ival = self._to_int(value)
+        cval = unichr(ival)
+        if cval == u'^':
+            return u'kOnlineHierarchySeparatorUnknown'
+        elif cval == u'|':
+            return u'kOnlineHierarchySeparatorNil'
+        else:
+            return cval
+
 class _Flags(_Int):
     def __init__(self, values, empty=u'', base=16):
         _Int.__init__(self, base)
@@ -165,6 +179,7 @@ _bool_any_converter = _BoolAnyVal()
 _seconds_converter = _Seconds()
 _hex_seconds_converter = _Seconds(base=16)
 _microseconds_converter = _Seconds(divisor=1000000)
+_purge_time_converter = _FormattedTime('%a %b %d %H:%M:%S %Y')
 
 # The big dictionary of field converters.
 #
@@ -216,24 +231,65 @@ _converters = {
         'Typed'          : _bool_any_converter,
     },
 
-    # Folder Cache Fields (ns:msg:db:row:scope:folders:)
+    # Folder Cache Fields (ns:msg:db:row:scope:folders:).
+    # Source references are from Thunderbird 3.0.5 unless otherwise indicated.
+    # Folder caches seem to share a lot of attributes with
+    # ns:msg:db:row:scope:dbfolderinfo from .msf files.
     'ns:msg:db:row:scope:folders:all' : {
-        'LastPurgeTime'     : None,
-        'MRUTime'           : None,
-        'aclFlags'          : None,
-        'boxFlags'          : None,
-        'charset'           : None,
-        'expungedBytes'     : None,
-        'flags'             : None,
-        'folderName'        : None,
-        'folderSize'        : None,
-        'hierDelim'         : None,
-        'key'               : None,
-        'onlineName'        : None,
-        'pendingMsgs'       : None,
-        'pendingUnreadMsgs' : None,
-        'totalMsgs'         : None,
-        'totalUnreadMsgs'   : None,
+        # From mailnews/db/msgdb/src/nsMsgDatabase.cpp
+        'LastPurgeTime'     : _purge_time_converter,
+        # Defined in mailnews/base/public/msgCore.h, used
+        # in mailnews/base/util/nsMsgDBFolder.cpp
+        'MRUTime'           : _seconds_converter,
+        # This shows up in mailnews/imap/src/nsImapMailFolder.cpp.
+        # Flag values are defined in mailnews/imap/src/nsImapMailFolder.h.
+        'aclFlags'          : _Flags(['IMAP_ACL_READ_FLAG',
+                                      'IMAP_ACL_STORE_SEEN_FLAG',
+                                      'IMAP_ACL_WRITE_FLAG',
+                                      'IMAP_ACL_INSERT_FLAG',
+                                      'IMAP_ACL_POST_FLAG',
+                                      'IMAP_ACL_CREATE_SUBFOLDER_FLAG',
+                                      'IMAP_ACL_DELETE_FLAG',
+                                      'IMAP_ACL_ADMINISTER_FLAG',
+                                      'IMAP_ACL_RETRIEVED_FLAG',
+                                      'IMAP_ACL_EXPUNGE_FLAG',
+                                      'IMAP_ACL_DELETE_FOLDER']),
+        # From mailnews/imap/src/nsImapMailFolder.cpp. Flags defined in
+        # mailnews/imap/src/nsImapCore.h.
+        'boxFlags'          : _Flags(['kMarked', 'kUnmarked', 'kNoinferiors',
+                                      'kNoselect', 'kImapTrash',
+                                      'kJustExpunged', 'kPersonalMailbox',
+                                      'kPublicMailbox', 'kOtherUsersMailbox',
+                                      'kNameSpace', 'kNewlyCreatedFolder',
+                                      'kImapDrafts', 'kImapSpam', 'kImapSent',
+                                      'kImapInbox', 'kImapAllMail',
+                                      'kImapXListTrash'],
+                                     'kNoFlags'),
+        # From mailnews/imap/src/nsImapMailFolder.cpp, with constants in
+        # mailnews/imap/src/nsImapCore.h
+        'hierDelim'         : _HierDelim(),
+
+        # The remaining items are all from mailnews/base/util/nsMsgDBFolder.cpp
+
+        # Flags are found in mailnews/base/public/nsMsgFolderFlags.idl.
+        'flags'             : _Flags(['Newsgroup', 'NewsHost', 'Mail',
+                                      'Directory', 'Elided', 'Virtual',
+                                      'Subscribed', 'Unused2', 'Trash',
+                                      'SentMail', 'Drafts', 'Queue', 'Inbox',
+                                      'ImapBox', 'Archive', 'ProfileGroup',
+                                      'Unused4', 'GotNew', 'ImapServer',
+                                      'ImapPersonal', 'ImapPublic',
+                                      'ImapOtherUser', 'Templates',
+                                      'PersonalShared', 'ImapNoselect',
+                                      'CreatedOffline', 'ImapNoinferiors',
+                                      'Offline', 'OfflineEvents', 'CheckNew',
+                                      'Junk', 'Favorite']),
+        'totalMsgs'         : _signed_int32_converter,
+        'totalUnreadMsgs'   : _signed_int32_converter,
+        'pendingUnreadMsgs' : _signed_int32_converter,
+        'pendingMsgs'       : _signed_int32_converter,
+        'expungedBytes'     : _hex_int_converter,
+        'folderSize'        : _hex_int_converter,
     },
 
     # Mail Summary File Fields
@@ -243,7 +299,7 @@ _converters = {
         # From mailnews/db/msgdb/src/nsMsgDatabase.cpp, SetStringProperty seems
         # to call the nsMsgDBFolder version, which seems to call the
         # nsMsgFolderCacheElement version.
-        'LastPurgeTime'        : _FormattedTime('%a %b %d %H:%M:%S %Y'),
+        'LastPurgeTime'        : _purge_time_converter,
         # Defined in mailnews/base/public/msgCore.h, used
         # in mailnews/base/util/nsMsgDBFolder.cpp
         'MRUTime'              : _seconds_converter,
