@@ -194,7 +194,7 @@ _converters = {
     # indicated.
     'ns:addrbk:db:row:scope:card:all' : {
         # mailnews/addrbook/src/nsAddrDatabase.h AddAllowRemoteContent
-        'AllowRemoteContent'    : _bool_int_converter,
+        'AllowRemoteContent' : _bool_int_converter,
         # Based on mailnews/addrbook/src/nsAddrDatabase.h AddCardType from
         # Thunderbird 2.0.0.24, CardType appears to be a string. However,
         # based on calls to GetCardTypeFromString in
@@ -202,16 +202,16 @@ _converters = {
         # constants in mailnews/addrbook/public/nsIAbCard.idl, it appears to be
         # an enumeration with a bizarre string-formatted integer internal
         # representation.
-        'CardType'              : _Enumeration([u'normal', u'AOL groups',
-                                                u'AOL additional email'],
-                                               default=u'normal'),
+        'CardType'           : _Enumeration([u'normal', u'AOL groups',
+                                             u'AOL additional email'],
+                                            default=u'normal'),
         # mailnews/addrbook/src/nsAddrDatabase.cpp AddRowToDeletedCardsTable
-        'LastModifiedDate'      : _hex_seconds_converter,
+        'LastModifiedDate'   : _hex_seconds_converter,
         # mailnews/addrbook/src/nsAddrDatabase.h AddPopularityIndex
-        'PopularityIndex'       : _hex_int_converter,
+        'PopularityIndex'    : _hex_int_converter,
         # mailnews/addrbook/src/nsAbCardProperty.cpp ConvertToEscapedVCard
-        'PreferMailFormat'      : _Enumeration([u'unknown', u'plaintext',
-                                                u'html']),
+        'PreferMailFormat'   : _Enumeration([u'unknown', u'plaintext',
+                                             u'html']),
     },
     'ns:addrbk:db:row:scope:list:all' : {
         # mailnews/addrbook/src/nsAddrDatabase.cpp GetListAddressTotal
@@ -317,13 +317,14 @@ _converters = {
         # current-view and current-view-tag seem to have duplicate definitions
         # in suite/mailnews/msgViewPickerOverlay.js and
         # mail/base/modules/mailViewManager.js.
-        'current-view'         : _Enumeration([
-                                    u'kViewItemAll', u'kViewItemUnread',
-                                    u'kViewItemTags', u'kViewItemNotDeleted',
-                                    None, None, None, u'kViewItemVirtual',
-                                    u'kViewItemCustomize',
-                                    u'kViewItemFirstCustom',
-                                 ]),
+        'current-view'         : _Enumeration([u'kViewItemAll',
+                                               u'kViewItemUnread',
+                                               u'kViewItemTags',
+                                               u'kViewItemNotDeleted',
+                                               None, None, None,
+                                               u'kViewItemVirtual',
+                                               u'kViewItemCustomize',
+                                               u'kViewItemFirstCustom']),
         'current-view-tag'     : None,
         'daysToKeepBodies'     : None,
         'daysToKeepHdrs'       : None,
