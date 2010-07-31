@@ -105,8 +105,36 @@ class _MsgFlags(_Flags):
 
         flags = self._get_flags(opts, ival)
 
-        flags.append('Priorities:%s' % self._priority_labels[priorities])
-        flags.append('Labels:%X' % labels)
+        if priorities:
+            flags.append('Priorities:%s' % self._priority_labels[priorities])
+        if labels:
+            flags.append('Labels:0x%X' % labels)
+
+        return u' '.join(flags)
+
+class _ImapFlags(_Flags):
+    _flag_vals = ['kImapMsgSeenFlag', 'kImapMsgAnsweredFlag',
+                  'kImapMsgFlaggedFlag', 'kImapMsgDeletedFlag',
+                  'kImapMsgDraftFlag', 'kImapMsgRecentFlag',
+                  'kImapMsgForwardedFlag', 'kImapMsgMDNSentFlag',
+                  'kImapMsgCustomKeywordFlag', None, None, None, None,
+                  'kImapMsgSupportMDNSentFlag', 'kImapMsgSupportForwardedFlag',
+                  'kImapMsgSupportUserFlag']
+
+    def __init__(self):
+        _Flags.__init__(self, self._flag_vals, 'kNoImapMsgFlag')
+
+    def convert(self, opts, value):
+        ival = self._to_int(value)
+        # Handle labels
+        labels = ival & 0xE00
+        ival -= labels
+        labels >>= 9
+
+        flags = self._get_flags(opts, ival)
+
+        if labels:
+            flags.append('Labels:0x%X' % labels)
 
         return u' '.join(flags)
 
@@ -171,6 +199,62 @@ class _FormattedTime(_Time):
         t = time.strptime(value, self._parse_format)
         return self._format(opts, t)
 
+class _SortColumns(_FieldConverter):
+    # constants from mailnews/base/public/nsIMsgDBView.idl.
+    _sort_order = {
+        0 : 'none',
+        1 : 'ascending',
+        2 : 'descending',
+    }
+
+    _sort_type = {
+        0x11 : 'byNone',
+        0x12 : 'byDate',
+        0x13 : 'bySubject',
+        0x14 : 'byAuthor',
+        0x15 : 'byId',
+        0x16 : 'byThread',
+        0x17 : 'byPriority',
+        0x18 : 'byStatus',
+        0x19 : 'bySize',
+        0x1a : 'byFlagged',
+        0x1b : 'byUnread',
+        0x1c : 'byRecipient',
+        0x1d : 'byLocation',
+        0x1e : 'byTags',
+        0x1f : 'byJunkStatus',
+        0x20 : 'byAttachments',
+        0x21 : 'byAccount',
+        0x22 : 'byCustom',
+        0x23 : 'byReceived',
+    }
+
+    def convert(self, opts, value):
+        sort_items = []
+
+        for piece in value.split('\r'):
+            it = iter(piece)
+            for isort_type in it:
+                isort_order = ord(next(it)) - ord('0')
+
+                sort_type = self._sort_type.get(ord(isort_type))
+                sort_order = self._sort_order.get(isort_order)
+
+                assert sort_type is not None, 'invalid sort type'
+                assert sort_order is not None, 'invalid sort order'
+
+                sort_item = u'type:%s order:%s' % (sort_type, sort_order)
+
+                if sort_type == 'byCustom':
+                    # The rest is the custom column name (or something like
+                    # that).
+                    custom_col = str(it)
+                    sort_item = '%s custom:%s' % (sort_item, custom_col)
+
+                sort_items.append(sort_item)
+
+        return u', '.join(sort_items)
+
 _hex_int_converter = _Int(base=16)
 _signed_int32_converter = _SignedInt32(base=16)
 _msg_flags_converter = _MsgFlags()
@@ -180,6 +264,19 @@ _seconds_converter = _Seconds()
 _hex_seconds_converter = _Seconds(base=16)
 _microseconds_converter = _Seconds(divisor=1000000)
 _purge_time_converter = _FormattedTime('%a %b %d %H:%M:%S %Y')
+# mailnews/base/public/nsMsgFolderFlags.idl
+_msg_folder_flags_converter = _Flags(['Newsgroup', 'NewsHost', 'Mail',
+                                      'Directory', 'Elided', 'Virtual',
+                                      'Subscribed', 'Unused2', 'Trash',
+                                      'SentMail', 'Drafts', 'Queue', 'Inbox',
+                                      'ImapBox', 'Archive', 'ProfileGroup',
+                                      'Unused4', 'GotNew', 'ImapServer',
+                                      'ImapPersonal', 'ImapPublic',
+                                      'ImapOtherUser', 'Templates',
+                                      'PersonalShared', 'ImapNoselect',
+                                      'CreatedOffline', 'ImapNoinferiors',
+                                      'Offline', 'OfflineEvents', 'CheckNew',
+                                      'Junk', 'Favorite'])
 
 # The big dictionary of field converters.
 #
@@ -272,18 +369,7 @@ _converters = {
         # The remaining items are all from mailnews/base/util/nsMsgDBFolder.cpp
 
         # Flags are found in mailnews/base/public/nsMsgFolderFlags.idl.
-        'flags'             : _Flags(['Newsgroup', 'NewsHost', 'Mail',
-                                      'Directory', 'Elided', 'Virtual',
-                                      'Subscribed', 'Unused2', 'Trash',
-                                      'SentMail', 'Drafts', 'Queue', 'Inbox',
-                                      'ImapBox', 'Archive', 'ProfileGroup',
-                                      'Unused4', 'GotNew', 'ImapServer',
-                                      'ImapPersonal', 'ImapPublic',
-                                      'ImapOtherUser', 'Templates',
-                                      'PersonalShared', 'ImapNoselect',
-                                      'CreatedOffline', 'ImapNoinferiors',
-                                      'Offline', 'OfflineEvents', 'CheckNew',
-                                      'Junk', 'Favorite']),
+        'flags'             : _msg_folder_flags_converter,
         'totalMsgs'         : _signed_int32_converter,
         'totalUnreadMsgs'   : _signed_int32_converter,
         'pendingUnreadMsgs' : _signed_int32_converter,
@@ -296,26 +382,8 @@ _converters = {
     # (ns:msg:db:row:scope:{dbfolderinfo,msgs,threads})
     # Source references are for Thunderbird 3.0.5 unless otherwise indicated.
     'ns:msg:db:row:scope:dbfolderinfo:all' : {
-        # From mailnews/db/msgdb/src/nsMsgDatabase.cpp, SetStringProperty seems
-        # to call the nsMsgDBFolder version, which seems to call the
-        # nsMsgFolderCacheElement version.
-        'LastPurgeTime'        : _purge_time_converter,
-        # Defined in mailnews/base/public/msgCore.h, used
-        # in mailnews/base/util/nsMsgDBFolder.cpp
-        'MRUTime'              : _seconds_converter,
-        # Defined in mailnews/db/msgdb/src/nsDBFolderInfo.cpp. Set with
-        # nsMsgDatabase::UInt32ToRowCellColumn. Based on usage in
-        # mailnews/imap/src/nsImapMailFolder.cpp, can be kUidUnknown (-1).
-        # I *think* this comes from the IMAP protocol, and is just an integer.
-        'UIDValidity'          : _signed_int32_converter,
-        # From mailnews/db/msgdb/src/nsDBFolderInfo.cpp.
-        'charSet'              : None,
-        # From mailnews/db/msgdb/src/nsDBFolderInfo.cpp.
-        'charSetOverride'      : _bool_int_converter,
-        # From mailnews/db/msgdb/src/nsMsgDatabase.cpp
-        'cleanupBodies'        : _bool_int_converter,
-        # current-view and current-view-tag seem to have duplicate definitions
-        # in suite/mailnews/msgViewPickerOverlay.js and
+        # current-view seems to have duplicate definitions in
+        # suite/mailnews/msgViewPickerOverlay.js and
         # mail/base/modules/mailViewManager.js.
         'current-view'         : _Enumeration([u'kViewItemAll',
                                                u'kViewItemUnread',
@@ -325,33 +393,74 @@ _converters = {
                                                u'kViewItemVirtual',
                                                u'kViewItemCustomize',
                                                u'kViewItemFirstCustom']),
-        'current-view-tag'     : None,
-        'daysToKeepBodies'     : None,
-        'daysToKeepHdrs'       : None,
-        'expungedBytes'        : None,
-        'fixedBadRefThreading' : None,
-        'flags'                : None,
-        'folderDate'           : None,
-        'folderName'           : None,
-        'folderSize'           : None,
-        'highWaterKey'         : None,
-        'imapFlags'            : None,
-        'keepUnreadOnly'       : None,
-        'knownArts'            : None,
-        'mailboxName'          : None,
-        'numHdrsToKeep'        : None,
-        'numMsgs'              : None,
-        'numNewMsgs'           : None,
-        'onlineName'           : None,
-        'readSet'              : None,
-        'retainBy'             : None,
-        'sortColumns'          : None,
-        'sortOrder'            : None,
-        'sortType'             : None,
-        'useServerDefaults'    : None,
-        'version'              : None,
-        'viewFlags'            : None,
-        'viewType'             : None,
+        # The next several are from mailnews/db/msgdb/src/nsMsgDatabase.cpp
+        # GetMsgRetentionSetting.
+        # retainBy enum comes from mailnews/db/msgdb/public/nsIMsgDatabase.idl.
+        'retainBy'             : _Enumeration([None, 'nsMsgRetainAll',
+                                               'nsMsgRetainByAge',
+                                               'nsMsgRetainByNumHeaders']),
+        'daysToKeepHdrs'       : _hex_int_converter,
+        'numHdrsToKeep'        : _hex_int_converter,
+        'daysToKeepBodies'     : _hex_int_converter,
+        'keepUnreadOnly'       : _bool_int_converter,
+        'useServerDefaults'    : _bool_int_converter,
+        'cleanupBodies'        : _bool_int_converter,
+
+        # The next several are shared with ns:msg:db:row:scope:folders:all
+        'LastPurgeTime'        : _purge_time_converter,
+        'MRUTime'              : _seconds_converter,
+        'expungedBytes'        : _hex_int_converter,
+        'flags'                : _msg_folder_flags_converter,
+        'folderSize'           : _hex_int_converter,
+
+        # The next several are from mailnews/db/msgdb/src/nsDBFolderInfo.cpp.
+        'numMsgs'              : _hex_int_converter,
+        'numNewMsgs'           : _hex_int_converter,
+        'folderDate'           : _hex_seconds_converter,
+        'charSetOverride'      : _bool_int_converter,
+        # Enum and flag values are in mailnews/base/public/nsIMsgDBView.idl
+        'viewType'             : _Enumeration(['eShowAllThreads', None,
+                                               'eShowThreadsWithUnread',
+                                               'eShowWatchedThreadsWithUnread',
+                                               'eShowQuickSearchResults',
+                                               'eShowVirtualFolderResults',
+                                               'eShowSearch']),
+        'viewFlags'            : _Flags(['kThreadedDisplay', None, None,
+                                         'kShowIgnored', 'kUnreadOnly',
+                                         'kExpandAll', 'kGroupBySort'],
+                                        'kNone'),
+        'sortType'             : _Enumeration([{0x11 : 'byNone',
+                                                0x12 : 'byDate',
+                                                0x13 : 'bySubject',
+                                                0x14 : 'byAuthor',
+                                                0x15 : 'byId',
+                                                0x16 : 'byThread',
+                                                0x17 : 'byPriority',
+                                                0x18 : 'byStatus',
+                                                0x19 : 'bySize',
+                                                0x1a : 'byFlagged',
+                                                0x1b : 'byUnread',
+                                                0x1c : 'byRecipient',
+                                                0x1d : 'byLocation',
+                                                0x1e : 'byTags',
+                                                0x1f : 'byJunkStatus',
+                                                0x20 : 'byAttachments',
+                                                0x21 : 'byAccount',
+                                                0x22 : 'byCustom',
+                                                0x23 : 'byReceived'}]),
+        'sortOrder'            : _Enumeration(['none', 'ascending',
+                                               'descending']),
+
+        # From mailnews/db/msgdb/src/nsMsgDatabase.cpp.
+        'fixedBadRefThreading' : _bool_int_converter,
+
+        # From mailnews/imap/src/nsImapMailFolder.cpp.
+        # Flags are in mailnews/imap/src/nsImapCore.h.
+        'imapFlags'            : _ImapFlags(),
+        # From mailnews/base/src/nsMsgDBView.cpp, using consants from
+        # mailnews/base/public/nsIMsgDBView.idl. DecodeColumnSort describes how
+        # to handle this.
+        'sortColumns'          : _SortColumns(),
     },
     'ns:msg:db:row:scope:msgs:all' : {
         'ProtoThreadFlags'    : None,
@@ -384,15 +493,9 @@ _converters = {
         'subject'             : None,
         'threadParent'        : None,
     },
-    'ns:msg:db:row:scope:threads:all' : {
-        'threadSubject' : None,
-    },
 
     # Mail Summary File meta-rows.
     'm' : {
-        # Source references are for Thunderbird 3.0.5 unless otherwise
-        # indicated.
-
         # These are all declared in mailnews/db/msgdb/src/nsMsgDatabase.cpp
         # and read in in mailnews/db/msgdb/src/nsMsgThread.cpp
         # InitCachedValues.
