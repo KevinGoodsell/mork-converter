@@ -463,35 +463,32 @@ _converters = {
         'sortColumns'          : _SortColumns(),
     },
     'ns:msg:db:row:scope:msgs:all' : {
-        'ProtoThreadFlags'    : None,
-        'account'             : None,
-        'ccList'              : None,
-        'date'                : None,
-        'dateReceived'        : None,
-        'flags'               : None,
-        'junkpercent'         : None,
-        'junkscore'           : None,
-        'junkscoreorigin'     : None,
-        'keywords'            : None,
-        'label'               : None,
-        'message-id'          : None,
-        'msgCharSet'          : None,
-        'msgOffset'           : None,
-        'msgThreadId'         : None,
-        'numLines'            : None,
-        'numRefs'             : None,
-        'offlineMsgSize'      : None,
-        'preview'             : None,
-        'priority'            : None,
-        'recipients'          : None,
-        'references'          : None,
-        'remoteContentPolicy' : None,
-        'replyTo'             : None,
-        'sender'              : None,
-        'size'                : None,
-        'statusOfset'         : None,
-        'subject'             : None,
-        'threadParent'        : None,
+        # mailnews/imap/src/nsImapMailFolder.cpp
+        'ProtoThreadFlags'    : _msg_flags_converter,
+
+        # The next several are defined in
+        # mailnews/db/msgdb/src/nsMsgDatabase.cpp and are actually used in
+        # mailnews/db/msgdb/src/nsMsgHdr.cpp.
+        'date'                : _hex_seconds_converter,
+        'size'                : _hex_int_converter,
+        'flags'               : _msg_flags_converter,
+        'priority'            : _Enumeration(['notSet', 'none', 'lowest',
+                                              'low', 'normal', 'high',
+                                              'highest']),
+        'label'               : _hex_int_converter,
+        'statusOfset'         : _hex_int_converter,
+        'numLines'            : _hex_int_converter,
+        'msgOffset'           : _hex_int_converter,
+        'offlineMsgSize'      : _hex_int_converter,
+        # Same files, but Thunderbird 2.0.0.24.
+        'numRefs'             : _hex_int_converter,
+
+        # From mailnews/local/src/nsParseMailbox.cpp
+        'dateReceived'        : _hex_seconds_converter,
+        # From mailnews/base/src/nsMsgContentPolicy.cpp
+        'remoteContentPolicy' : _Enumeration(['kNoRemoteContentPolicy',
+                                              'kBlockRemoteContent',
+                                              'kAllowRemoteContent']),
     },
 
     # Mail Summary File meta-rows.
