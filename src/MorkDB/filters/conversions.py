@@ -1,5 +1,22 @@
+# Copyright 2010 Kevin Goodsell
+
+# This file is part of mork-converter.
+#
+# mork-converter is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License Version 2 as published
+# by the Free Software Foundation.
+#
+# mork-converter is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
+
 import warnings
 import time
+import optparse
 
 from filterbase import Filter
 
@@ -14,6 +31,9 @@ class _Int(_FieldConverter):
         self._base = base
 
     def convert(self, opts, value):
+        if opts.no_base:
+            return value
+
         return unicode(self._to_int(value))
 
     def _to_int(self, value):
@@ -21,6 +41,9 @@ class _Int(_FieldConverter):
 
 class _SignedInt32(_Int):
     def convert(self, opts, value):
+        if opts.no_base:
+            return value
+
         ival = self._to_int(value)
         assert ival <= 0xffffffff, 'integer too large for 32 bits'
         if ival > 0x7fffffff:
@@ -33,6 +56,9 @@ class _HierDelim(_Int):
         _Int.__init__(self, 16)
 
     def convert(self, opts, value):
+        if opts.no_symbolic:
+            return value
+
         ival = self._to_int(value)
         cval = unichr(ival)
         if cval == u'^':
@@ -50,6 +76,9 @@ class _Flags(_Int):
         self._values = list(values)
 
     def convert(self, opts, value):
+        if opts.no_symbolic:
+            return value
+
         ival = self._to_int(value)
         flags = self._get_flags(opts, ival)
         if flags:
@@ -91,6 +120,9 @@ class _MsgFlags(_Flags):
         _Flags.__init__(self, self._flag_vals)
 
     def convert(self, opts, value):
+        if opts.no_symbolic:
+            return value
+
         ival = self._to_int(value)
         # Deal with non-flags:
         # Priorities = 0xE000
@@ -125,6 +157,9 @@ class _ImapFlags(_Flags):
         _Flags.__init__(self, self._flag_vals, 'kNoImapMsgFlag')
 
     def convert(self, opts, value):
+        if opts.no_symbolic:
+            return value
+
         ival = self._to_int(value)
         # Handle labels
         labels = ival & 0xE00
@@ -150,6 +185,9 @@ class _Enumeration(_Int):
         self._default = default
 
     def convert(self, opts, value):
+        if opts.no_symbolic:
+            return value
+
         if value == '':
             result = self._default
         else:
@@ -170,6 +208,9 @@ class _BoolInt(_Enumeration):
 # doesn't matter.
 class _BoolAnyVal(_FieldConverter):
     def convert(self, opts, value):
+        if opts.no_symbolic:
+            return value
+
         return u'true'
 
 class _Time(_FieldConverter):
@@ -182,6 +223,9 @@ class _Seconds(_Time):
         self._divisor = divisor
 
     def convert(self, opts, value):
+        if opts.no_time:
+            return value
+
         # 0 is a common value, and obviously doesn't represent a valid time.
         if value == '0':
             return value
@@ -196,6 +240,9 @@ class _FormattedTime(_Time):
         self._parse_format = parse_format
 
     def convert(self, opts, value):
+        if opts.no_time:
+            return value
+
         t = time.strptime(value, self._parse_format)
         return self._format(opts, t)
 
@@ -230,6 +277,9 @@ class _SortColumns(_FieldConverter):
     }
 
     def convert(self, opts, value):
+        if opts.no_symbolic:
+            return value
+
         sort_items = []
 
         for piece in value.split('\r'):
@@ -511,12 +561,22 @@ class FieldConverter(Filter):
         self.mork_filter_order = order
 
     def add_options(self, parser):
-        parser.add_option('--no-convert', action='store_true',
-            help="don't do usual field conversions")
-        parser.add_option('--time-format', metavar='FORMAT',
+        group = optparse.OptionGroup(parser, 'Field Conversion Options')
+
+        group.add_option('-x', '--no-convert', action='store_true',
+            help="don't do any of the usual field conversions")
+        group.add_option('--no-time', action='store_true',
+            help="don't do time/date conversions")
+        group.add_option('--time-format', metavar='FORMAT',
             help='use FORMAT as the strftime format for times/dates '
                  '(default: %c)')
+        group.add_option('--no-base', action='store_true',
+            help="don't convert hexidecimal integers to decimal")
+        group.add_option('--no-symbolic', action='store_true',
+            help="don't do symbolic conversions (e.g. flags, booleans, and "
+                 "number-to-string conversions)")
 
+        parser.add_option_group(group)
         parser.set_defaults(time_format='%c')
 
     def process(self, db, opts):
