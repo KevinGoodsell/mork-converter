@@ -593,4 +593,4 @@ class FieldConverter(Filter):
                 if converter:
                     row[col] = converter.convert(opts, value)
 
-convert_fields = FieldConverter(4600)
+convert_fields = FieldConverter(4200)

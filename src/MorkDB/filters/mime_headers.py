@@ -96,4 +96,4 @@ class DecodeMimeHeaders(Filter):
     def _decode_header(self, value):
         return self._encoded_matcher.sub(self._replacer, value)
 
-mime_headers_filter = DecodeMimeHeaders(4400)
+mime_headers_filter = DecodeMimeHeaders(4600)

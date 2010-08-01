@@ -38,7 +38,7 @@ class StripEmptyCells(Filter):
                 if not val:
                     del row[col]
 
-strip_empty_filter = StripEmptyCells(100)
+strip_empty_filter = StripEmptyCells(4400)
 
 class StripMetaTables(Filter):
     '''
