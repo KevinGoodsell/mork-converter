@@ -21,30 +21,112 @@ import optparse
 
 from filterbase import Filter
 
+class FieldInfo(object):
+    '''
+    Holds all the info a decoder might need.
+    '''
+    def __init__(self, db, opts, table_namespace, table_id):
+        self.db = db
+        self.opts = opts
+        self.table_namespace = table_namespace
+        self.table_id = table_id
+
+        self.row_namespace = None
+        self.column = None
+        self.value = None
+
+        self._byte_order = None
+
+    def set_value(self, row_namespace, column, value):
+        self.row_namespace = row_namespace
+        self.column = column
+        self.value = value
+
+    def table(self):
+        return self.db.tables[self.table_namespace, self.table_id]
+
+    def byte_order(self):
+        if self._byte_order is None:
+            self._byte_order = self._find_byte_order()
+
+        return self._byte_order
+
+    def _find_byte_order(self):
+        '''
+        Determine byte order by meta-table data or options. Failing that,
+        fall back on guessing.
+        '''
+        byte_order = None
+        metatable = self.db.meta_tables.get((self.table_namespace,
+                                             self.table_id))
+        if metatable:
+            try:
+                byte_order = metatable['ByteOrder']
+            except KeyError:
+                pass
+
+        if byte_order is None and self.opts.byte_order:
+            if self.opts.byte_order in ('b', 'big'):
+                byte_order = 'BE'
+            else:
+                byte_order = 'LE'
+
+        if byte_order is None:
+            byte_order = self._guess_byte_order()
+
+        return byte_order
+
+    def _guess_byte_order(self):
+        table = self.db.tables.get((self.table_namespace, self.table_id))
+        be_count = 0
+        le_count = 0
+        # Check each row and column, testing for likely byte order
+        for (row_namespace, row_id, row) in table:
+            for (column, value) in row.items():
+                if (row_namespace, column) not in _known_utf16:
+                    # Not a UTF-16 field
+                    continue
+
+                warnings.warn('guessing byte order, consider using -b option')
+
+                # Fewest unique Most Significant Bytes is a reasonable guess
+                be_msbs = set(value[::2]) # even indices
+                le_msbs = set(value[1::2]) # odd indices
+                if len(be_msbs) < len(le_msbs):
+                    be_count += 1
+                elif len(be_msbs) > len(le_msbs):
+                    le_count += 1
+
+        if be_count > le_count:
+            return 'BE'
+        else:
+            return 'LE'
+
 # Decoders:
 
-def _decode_from_opts(opts, byte_order, row_namespace, column, value):
+def _decode_from_opts(field):
     '''
     Decoder that uses user-supplied encodings for specific fields.
     '''
-    if isinstance(opts.force_encoding, list):
+    if isinstance(field.opts.force_encoding, list):
         # convert to dict:
         kv = [((row_ns, col), enc) for (row_ns, col, enc)
-              in opts.force_encoding]
-        opts.force_encoding = dict(kv)
+              in field.opts.force_encoding]
+        field.opts.force_encoding = dict(kv)
 
-    encoding = opts.force_encoding.get((row_namespace, column))
+    encoding = field.opts.force_encoding.get((field.row_namespace,
+                                              field.column))
     if encoding is None:
         return None
 
-    return value.decode(encoding)
+    return field.value.decode(encoding)
 
-def _decode_utf8(opts, byte_order, row_namespace, column, value):
+def _decode_utf8(field):
     '''
     Decoder that attempts UTF-8, and gives up on error.
     '''
     try:
-        return value.decode('utf-8')
+        return field.value.decode('utf-8')
     except UnicodeError:
         return None
 
@@ -53,13 +135,14 @@ _known_utf16 = set([
     ('ns:formhistory:db:row:scope:formhistory:all', 'Name'),
     ('ns:formhistory:db:row:scope:formhistory:all', 'Value'),
 ])
-def _decode_known_utf16(opts, byte_order, row_namespace, column, value):
+def _decode_known_utf16(field):
     '''
     Decoder for fields known to be UTF-16.
     '''
-    if (row_namespace, column) not in _known_utf16:
+    if (field.row_namespace, field.column) not in _known_utf16:
         return None
 
+    byte_order = field.byte_order()
     if byte_order in ('BE', 'BBBB'):
         codec = 'utf-16-be'
     elif byte_order in ('LE', 'llll'):
@@ -67,10 +150,10 @@ def _decode_known_utf16(opts, byte_order, row_namespace, column, value):
     else:
         assert False, 'Invalid byte order: %r' % byte_order
 
-    return value.decode(codec)
+    return field.value.decode(codec)
 
 _control_matcher = re.compile(ur'[\x80-\x9f]')
-def _decode_iso_8859(opts, byte_order, row_namespace, column, value):
+def _decode_iso_8859(field):
     '''
     Decoder that uses one of the ISO-8859 encodings, and fails if the result
     contains C1 control characters (based on the assumption that this means
@@ -78,20 +161,20 @@ def _decode_iso_8859(opts, byte_order, row_namespace, column, value):
     '''
     # Skip ISO-8859 decoding if user asks or if bytes are found that would
     # decode as control characters.
-    if opts.iso_8859 == '' or _control_matcher.search(value):
+    if field.opts.iso_8859 == '' or _control_matcher.search(field.value):
         return None
 
     try:
-        return value.decode('iso-8859-%s' % opts.iso_8859)
+        return field.value.decode('iso-8859-%s' % field.opts.iso_8859)
     except UnicodeError:
         return None
 
-def _decode_final(opts, byte_order, row_namespace, column, value):
+def _decode_final(field):
     '''
     Last-ditch decoder.
     '''
     try:
-        return value.decode(opts.fallback_charset)
+        return field.value.decode(field.opts.fallback_charset)
     except UnicodeError:
         return None
 
@@ -127,9 +210,8 @@ class DecodeCharacters(Filter):
 
     def process(self, db, opts):
         for (table_namespace, table_id, table) in db.tables.items():
-            byte_order = self._find_byte_order(db, opts, table_namespace,
-                                               table_id)
-            self._filter_table(opts, table, byte_order)
+            field = FieldInfo(db, opts, table_namespace, table_id)
+            self._filter_table(field, table)
 
     def _iso_8895_parts(self):
         result = []
@@ -143,62 +225,14 @@ class DecodeCharacters(Filter):
 
         return result
 
-    def _find_byte_order(self, db, opts, table_namespace, table_id):
-        '''
-        Determine byte order by meta-table data or options. Failing that,
-        fall back on guessing.
-        '''
-        byte_order = None
-        metatable = db.meta_tables.get((table_namespace, table_id))
-        if metatable:
-            try:
-                byte_order = metatable['ByteOrder']
-            except KeyError:
-                pass
-
-        if byte_order is None and opts.byte_order:
-            if opts.byte_order in ('b', 'big'):
-                byte_order = 'BE'
-            else:
-                byte_order = 'LE'
-
-        if byte_order is None:
-            table = db.tables.get((table_namespace, table_id))
-            byte_order = self._guess_byte_order(opts, table)
-
-        return byte_order
-
-    def _guess_byte_order(self, opts, table):
-        counts = {'BE' : 0, 'LE' : 0}
-        # Check each row and column, testing for likely byte order
-        for (row_namespace, row_id, row) in table:
-            for (column, value) in row.items():
-                if (row_namespace, column) not in _known_utf16:
-                    # Not a UTF-16 field
-                    continue
-
-                warnings.warn('guessing byte order, consider using -b option')
-
-                # Fewest unique Most Significant Bytes is a reasonable guess
-                be_msbs = set(value[::2]) # even indices
-                le_msbs = set(value[1::2]) # odd indices
-                if len(be_msbs) < len(le_msbs):
-                    counts['BE'] += 1
-                elif len(be_msbs) > len(le_msbs):
-                    counts['LE'] += 1
-
-        counts = [(count, val) for (val, count) in counts.items()]
-        counts.sort()
-        return counts[-1][1]
-
-    def _filter_table(self, opts, table, byte_order):
+    def _filter_table(self, field, table):
         for (row_namespace, row_id, row) in table:
             for (column, value) in row.items():
                 if isinstance(value, unicode):
                     continue
 
-                row[column] = self._decode_field(opts, byte_order,
-                                                 row_namespace, column, value)
+                field.set_value(row_namespace, column, value)
+                row[column] = self._decode_field(field)
 
     _decoders = [
         _decode_from_opts,
@@ -208,10 +242,9 @@ class DecodeCharacters(Filter):
         _decode_final,
     ]
 
-    def _decode_field(self, opts, byte_order, row_namespace, column, value):
+    def _decode_field(self, field):
         for decoder in self._decoders:
-            decoded_val = decoder(opts, byte_order, row_namespace, column,
-                                  value)
+            decoded_val = decoder(field)
             if decoded_val is not None:
                 return decoded_val
 
