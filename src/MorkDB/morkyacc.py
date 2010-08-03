@@ -342,7 +342,7 @@ def parse_file(f):
         tree_name = filename + '.parse-tree'
         try:
             pickle.dump(tree, open(tree_name, 'w'), pickle.HIGHEST_PROTOCOL)
-        except OSError:
+        except IOError:
             pass
 
     return tree
