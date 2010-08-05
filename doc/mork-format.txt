@@ -23,9 +23,9 @@ While the basic structure of the data is fairly simple, the Mork format
 itself is confusing, all but impossible to decode by hand, and poorly
 documented. The documentation that exists seems to contradict the
 Mozilla implementation of Mork 1.4, probably the only widely-used
-version (according to source comments and release dates, earlier
-versions were used only for very early milestone releases of the Mozilla
-Suite).
+version (according to source comments in morkWriter.h[2] and release
+dates, earlier versions were used only for very early milestone releases
+of the Mozilla Suite).
 
 2. File Layout
 
@@ -49,6 +49,30 @@ to the documentation[1], any of the combinations 0x0A, 0x0D, 0x0A0D, and
 DOS/Windows, and Macintosh) and the uncommon 'newline carriage-return'.
 
 2.2 Syntax Elements
+
+Here is a short example Mork file for reference (Example 1):
+
+// <!-- <mdb:mork:z v="1.4"/> -->
+< <(a=c)> // (f=iso-8859-1)
+  (80=Category)(81=FilmTitle)(82=Winner)(83=Other)(84=ns:awards)>
+
+<(80=Best Picture)(81=Annie Hall)(82=Best Director)(83=Woody Allen)(84
+  =Best Actor in a Leading Role)(85=Richard Dreyfuss)(86=The Goodbye Girl)
+  (87=Best Actress in a Leading Role)(88=Diane Keaton)>
+{1:^84
+  [1 (^80^80)(^81^81)(^82^81)(^83=)]
+  [2 (^80^82)(^81^81)(^82^83)(^83=)]
+  [3 (^80^84)(^81^86)(^82^85)(^83=)]
+  [4 (^80^87)(^81^81)(^82^88)(^83=)]}
+
+Expanded to table form, it looks like this:
+
+Row | Category                       | Winner           | FilmTitle        | Other
+----|--------------------------------|------------------|------------------|------------
+  1 | Best Picture                   | Annie Hall       | Annie Hall       |
+  2 | Best Director                  | Woody Allen      | Annie Hall       |
+  3 | Best Actor in a Leading Role   | Richard Dreyfuss | The Goodbye Girl |
+  4 | Best Actress in a Leading Role | Diane Keaton     | Annie Hall       |
 
 2.2.1 Comments and Magic
 
@@ -100,6 +124,17 @@ in the file following the magic line), and several for the 'a' scope.
 Each Dict encountered in the file just updates the in-memory Dict with
 new aliases.
 
+In Example 1, there are two Dicts:
+
+< <(a=c)>
+  (80=Category)(81=FilmTitle)(82=Winner)(83=Other)(84=ns:awards)>
+
+<(80=Best Picture)(81=Annie Hall)(82=Best Director)(83=Woody Allen)(84
+  =Best Actor in a Leading Role)(85=Richard Dreyfuss)(86=The Goodbye Girl)
+  (87=Best Actress in a Leading Role)(88=Diane Keaton)>
+
+The first Dict is for the 'c' scope and the second is for the 'a' scope.
+
 2.2.3 Aliases
 
 Aliases and Cells are very similar, but Aliases are specific to Dicts.
@@ -129,13 +164,13 @@ where the key represents a column name and the value represents the data
 in that column of the row. They also define the meta-data in
 Meta-Tables, Meta-Rows, and Meta-Dicts.
 
-Like Aliases, Cells are delimited my parentheses. The most basic form of
+Like Aliases, Cells are delimited by parentheses. The most basic form of
 a Cell looks pretty much like an Alias:
 
 (keyName=arbitrary value text)
 
 Here the key is 'keyName' and the value is 'arbitrary value text'. It's
-also passible for the value to be empty:
+also possible for the value to be empty:
 
 (keyName=)
 
@@ -158,7 +193,7 @@ When an alias is used for the key, it is looked up in the 'c' scope
 (this was described in the 'Dictionaries' section). For the value, it is
 looked up in the 'a' scope.
 
-It's also possible for alias scopes to be given explicitely, which looks
+It's also possible for alias scopes to be given explicitly, which looks
 like this:
 
 (^92:c^A5:a)
@@ -172,27 +207,28 @@ Confusingly, scopes can also be replaced with aliases:
 
 (^92:^E8^A5)
 
-A scope alias is looked up in the 'c' scope (XXX I think). It's not
-clear if an explicit scope can be given for a scope alias, or how deep
-the rabbit-hole can go if this is allowed.
+A scope alias is looked up in the 'c' scope.
 
 2.2.5 Rows
 
 Rows are the typical container for Cells. In the Mork file syntax they
-are delimited with square brackets. A simple Row might look like this:
+are delimited with square brackets. Here's a row from Example 1:
 
-[4(^23^A8)(^24^28)]
+  [2 (^80^82)(^81^81)(^82^83)(^83=)]
 
-Here the 4 is the hexidecimal identifier for the row, which contains two
-Cells (which represent the data in two columns of the row).
+Here the 2 is the hexadecimal identifier for the row, which contains
+four Cells (which represent the data in four columns of the row).
 
-It's entirely possible for the Mork file to contain multiple Rows with
-same identifier. This updates the in-memory Row with new or replacement
-items.
+Mork files will often contain multiple rows with the same identifier.
+Duplicate rows generally appear inside Groups (though the code seems to
+support duplicates anywhere rows can appear). This has the effect of
+updating the in-memory Row with new or replacement items. Row updates
+are described in more detail in the section on Groups.
 
 Rows will often appear inside Tables, but not always. A Row outside of
 any Table could be inserted into a Table later, or it could be an update
-for a Row that is already in a Table.
+for a Row that is already in a Table. In some cases rows are created but
+never used in any table. Presumably these rows can be ignored.
 
 The Row identifier belongs to a particular namespace or scope. This is
 pretty much like the scopes that Dict aliases occupy, but row namespaces
@@ -202,18 +238,15 @@ tend to be more descriptive. Here's an example:
 [4:^80(^23^A8)(^24^28)]
 
 When a Row identifier lacks an explicit scope, it inherits the scope
-from the table that it's contained in. (XXX Verify this, and is there a
-default for not in a table?)
-
-2.2.5.1 Truncated Rows
-2.2.5.2 Deleted Rows
-2.2.5.3 Moved Rows
+from the table that it's contained in.
 
 2.2.6 Tables
 
 2.2.7 Meta-Dicts, Meta-Tables, and Meta-Rows
 
 2.2.8 Groups (AKA Transactions)
+
+Remember: Truncated Rows, Deleted Rows, Moved Rows
 
 3. Character Escaping
 
