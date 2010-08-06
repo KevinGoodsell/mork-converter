@@ -242,7 +242,118 @@ from the table that it's contained in.
 
 2.2.6 Tables
 
+Tables are the basic container for Rows. Like Rows, Tables have a unique
+hexadecimal identifier and a namespace. Tables are delimited with curly
+braces. In Example 1, this is the table:
+
+{1:^84
+  [1 (^80^80)(^81^81)(^82^81)(^83=)]
+  [2 (^80^82)(^81^81)(^82^83)(^83=)]
+  [3 (^80^84)(^81^86)(^82^85)(^83=)]
+  [4 (^80^87)(^81^81)(^82^88)(^83=)]}
+
+Here, the first 1 is the hexadecimal identifier for the Table, and the
+Table namespace is given by the reference ^84. The reference is looked
+up in the 'c' Dict scope, and translates to "ns:awards" in this case.
+
+This Table contains four Rows, but there are no specific limits on the
+number of Rows a table can contain. Tables with zero Rows are also
+permitted.
+
+Table Rows can be described directly within the Table as they are in
+this example, but it's also possible for Table Rows to be included by
+reference. The Table from Example 1 could be re-written like this:
+
+[1:^84 (^80^80)(^81^81)(^82^81)(^83=)]
+[2:^84 (^80^82)(^81^81)(^82^83)(^83=)]
+[3:^84 (^80^84)(^81^86)(^82^85)(^83=)]
+[4:^84 (^80^87)(^81^81)(^82^88)(^83=)]
+{1:^84 1 2 3 4}
+
+The two Row forms can also be mixed:
+
+[2:^84 (^80^82)(^81^81)(^82^83)(^83=)]
+[3:^84 (^80^84)(^81^86)(^82^85)(^83=)]
+{1:^84
+  [1 (^80^80)(^81^81)(^82^81)(^83=)]
+  2
+  3
+  [4 (^80^87)(^81^81)(^82^88)(^83=)]}
+
 2.2.7 Meta-Dicts, Meta-Tables, and Meta-Rows
+
+Meta-Dicts, Meta-Tables, and Meta-Rows contain meta-data in the form of
+Cells. While Meta-Dicts occur inside Dicts, and Meta-Tables occur inside
+Tables, Meta-Rows are a bit more tricky. According to the
+documentation[1] Meta-Rows occur inside Rows, but this usage doesn't
+seem to appear in real Mork files. Instead, Meta-Rows appear as a Row
+inside a Meta-Table. Both usages are supported by the Mozilla Mork
+parser (in morkParser.cpp[2] see how ReadRow calls ReadMeta, and how
+ReadMeta handles the '[' character).
+
+2.2.7.1 Meta-Dicts
+
+Example 1 includes the following Meta-Dict:
+
+<(a=c)>
+
+This is a very common Meta-Dict that probably appears in all Mork files.
+It may also be the *only* Meta-Dict that is actually used in Mork files.
+This Meta-Dict sets the namespace for the Dict to 'c' (recall that the
+default is 'a'). This usage is described in the documentation[1], but
+with the error that 'atomScope' is used instead of 'a'.
+
+Based on OnNewCell in morkBuilder.cpp[2] and the constants
+morkStore_kAtomScopeColumn and morkStore_kFormColumn in morkStore.h, it
+looks like the only other type of column that is recognized in
+Meta-Dicts is 'f'. This doesn't appear to be used in practice, but I
+suspect it's related to the comment described in the Encoding section:
+
+// (f=iso-8859-1)
+
+2.2.7.2 Meta-Tables
+
+Meta-Tables typically contain two columns, 'k' and 's'. These seem to
+stand for 'kind' and 'status', respectively. Based on the source[2],
+'r', 'a', and 'f' are also allowed (search for morkStore_kKindColumn in
+morkBuilder.cpp and morkStore.h), but these don't seem to be used in
+practice.
+
+A typical Table with a Meta-Table looks like this:
+
+{1:^80 {(k^BF:c)(s=9)}
+  // ... Rows go here
+}
+
+The value in the 'kind' column is a string that seems to describe the
+usage of the table. The 'status' value is no more than a few characters:
+a digit indicating the Table's priority, an optional 'u' to indicate
+that the table is unique, and/or an optional 'v' to indicate that the
+table is verbose. 'v' may not be used in practice. Search for
+mBuilder_TableStatus in the OnValue function in morkBuilder.cpp[2] to
+find the code that handles this.
+
+Additionally, Meta-Rows are usually (maybe always) found in Meta-Tables.
+A Meta-Row in a Meta-Table look just like a Row in a Table, and seem to
+contain various application-specific metadata for the Table. The
+previous Meta-Table example with the addition of a Meta-Row would look
+like this:
+
+{1:^80 {(k^BF:c)(s=9)[1(^8C=LE)]}
+  // ... Rows go here
+}
+
+In this example, suppose ^8C expands (via the Dict for the 'c' scope) to
+'ByteOrder'. This is used in some Mork files to indicate the byte order
+(Big Endian or Little Endian) of fields in the Table that use multi-byte
+character encodings such as UTF-16.
+
+The Meta-Row can also be included by reference:
+
+[1:^80 (^8C=LE)]
+{1:^80 {(k^BF:c)(s=9)1}
+  // ... Rows go here
+}
 
 2.2.8 Groups (AKA Transactions)
 
