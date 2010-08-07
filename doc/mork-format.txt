@@ -357,7 +357,122 @@ The Meta-Row can also be included by reference:
 
 2.2.8 Groups (AKA Transactions)
 
-Remember: Truncated Rows, Deleted Rows, Moved Rows
+Mork Groups represent a set of changes to make to the in-memory Mork
+objects. Groups are delimited by a string of characters that includes a
+hexadecimal identifier. Here's an example of an empty Group:
+
+@$${2{@
+@$$}2}@
+
+Here the hexadecimal identifier is 2. A Group can contain Tables, Rows,
+and Dicts. It's also possible for a Group to be aborted, meaning the
+changes in it should not be applied. An aborted Group is indicated with
+an alternative termination string, and looks like this:
+
+@$${2{@
+@$$}~~}@
+
+This abort syntax is different from the documented abort syntax[1][3],
+but can be verified in the function FindGroupEnd in morkParser.cpp[2].
+
+Any group that is not properly terminated is also considered aborted.
+
+Inside groups, the usual syntax for adding Tables and Rows is supported.
+Some additional syntax for deleting and moving Rows and deleting Cells
+is also found in Groups. Based on the source, this extra syntax may
+actually be allowed outside of Groups, but in practice it seems to
+appear only in Groups.
+
+Here is Example 1 with a Group added. This group adds a new Row to the
+existing Table.
+
+// <!-- <mdb:mork:z v="1.4"/> -->
+< <(a=c)> // (f=iso-8859-1)
+  (80=Category)(81=FilmTitle)(82=Winner)(83=Other)(84=ns:awards)>
+
+<(80=Best Picture)(81=Annie Hall)(82=Best Director)(83=Woody Allen)(84
+  =Best Actor in a Leading Role)(85=Richard Dreyfuss)(86=The Goodbye Girl)
+  (87=Best Actress in a Leading Role)(88=Diane Keaton)>
+{1:^84
+  [1 (^80^80)(^81^81)(^82^81)(^83=)]
+  [2 (^80^82)(^81^81)(^82^83)(^83=)]
+  [3 (^80^84)(^81^86)(^82^85)(^83=)]
+  [4 (^80^87)(^81^81)(^82^88)(^83=)]}
+
+@$${1{@
+<(89=Best Costume Design)(8A=Star Wars)(8B=John Mollo)>
+{1:^84 [5 (^80^89)(^81^8A)(^82^8B)(^83=)]}
+@$$}1}@
+
+2.2.8.1 Deleting a Row
+
+A Row can be deleted from a Table by prefixing the Row identifier with
+'-'. For example, to delete Row 2 from Example 1, a Group like this
+might be used:
+
+@$${2{@
+{1:^84 -2}
+@$$}2}@
+
+Row deletions and insertions can be mixed:
+
+@$${2{@
+<(8C=Best Cinematography)(8D=Vilmos Zsigmond)(8E
+  =Close Encounters of the Third Kind)>
+{1:^84 -2 [6 (^80^8C)(^81^8E)(^82^8D)(^83=)]}
+@$$}2}@
+
+2.2.8.2 Deleting All Rows From a Table
+
+All the Rows in a Table can be deleted with a single operation. This is
+done by placing a '-' at the beginning of the Table, before the Table
+identifier:
+
+@$${2E{@
+{-9:^82}
+@$$}2E}@
+
+This syntax can also be mixed with Row insertions to replace all Rows in
+a Table.
+
+2.2.8.3 Moving a Row
+
+Moving a Row within a Table is accomplished by including the Row
+identifier, followed by a '!', followed by a hexadecimal number giving
+the new position in the Table. The position is a 0-based index into the
+sequence of Rows. Other Row positions are shifted to make the slot
+available and/or fill in the vacated slot as needed. For example, moving
+Row 3 to the beginning of the Table in Example 1 would look like this:
+
+@$${3{@
+{1:^84 3 ! 0}
+@$$}3}@
+
+2.2.8.4 Deleting a Cell
+
+Deleting a Cell within a Row also uses the '-' operator. The operator is
+placed inside the Row, in front of the Cell that will be deleted:
+
+@$${3A{@
+[5:^8E -(^88^9A)]
+@$$}3A}@
+
+This isn't used in any Mork files I've encountered, but appears to be
+supported in the source[2] (see the call to OnMinusCell in
+morkParser.cpp).
+
+2.2.8.5 Deleting All Cells From a Row
+
+All the Cells in a Row can be deleted with a singe operation. This is
+done by placing a '-' at the beginning of the Row, before the Row
+identifier:
+
+@$${1B{@
+[- 5:^90]
+@$$}1B}@
+
+This syntax can also be mixed with Cell insertions to replace all Cells
+in a Row.
 
 3. Character Escaping
 
@@ -374,3 +489,4 @@ Remember: Truncated Rows, Deleted Rows, Moved Rows
 [1] https://developer.mozilla.org/En/Mork_Structure
 [2] Source references can be looked up here:
 http://mxr.mozilla.org/mozilla1.8/source/db/mork/src/
+[3] http://www-archive.mozilla.org/mailnews/arch/mork/grammar.txt
