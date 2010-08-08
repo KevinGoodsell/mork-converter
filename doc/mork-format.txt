@@ -476,15 +476,42 @@ in a Row.
 
 3. Character Escaping
 
-4. Interpreting Mork
+Some characters in Cell and Alias values need an alternative
+representation to avoid conflicting with Mork syntax. Mork provides two
+kinds of special character sequences for representing these characters.
 
-4.1 Multiple Dicts
+3.1 Backslash Escapes
 
-4.2 Object Namespaces
+The first type of special character sequence in Mork is introduced with
+the backslash character, '\'. This removes any special meaning from the
+character that follows, and is particularly useful for including the ')'
+character in Cell and Alias values (since this character would otherwise
+terminate the Cell or Alias).
 
-4.3 Meta-Data
+Another common use for backslash escapes is line continuation. When a
+backslash is the last character on a line, the backslash and the end of
+the line are removed and have no effect on the final value. This is used
+to split long values across multiple lines:
 
-5. Application-Specific Notes
+<(80=This is an Alias for a very long value which will use a backslash \
+escape sequence to continue onto the following line.)>
+
+3.2 Dollar-Sign Escapes
+
+The second type of special character sequence is a dollar sign followed
+by two hexadecimal digits which give the value of the replacement byte.
+This is often used for bytes that are non-printable as ASCII characters,
+especially in UTF-16 text. For example, a string with the Unicode
+snowman character (U+2603):
+
+☃snowman☃
+
+may be represented as UTF-16 text in an Alias this way:
+
+<(83=$03$26s$00n$00o$00w$00m$00a$00n$00$03$26)>
+
+Note that the value is just a list of bytes. Interpreting this value as
+UTF-16 is up to the application.
 
 [1] https://developer.mozilla.org/En/Mork_Structure
 [2] Source references can be looked up here:
