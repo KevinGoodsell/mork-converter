@@ -1,3 +1,23 @@
+Version 2.1
+
+* To make conversion faster, the parse tree for each Mork file is now
+  saved in a file with the same name as the input file, but with
+  .parse-tree appended. On subsequent conversion runs, the parse tree
+  will be read directly instead of re-parsing the Mork file. These
+  .parse-tree files can be safely deleted.
+* A new filter for doing field conversions has been added. This filter
+  is enabled by default and its purpose is to make the output more
+  readable. It converts times to a common format (similar to but more
+  functional than the 'times' filter, which has been removed), converts
+  hexadecimal values to decimal, and expands numeric values to symbolic
+  names.
+* Some restructuring of the encoding filter has been done, which makes
+  it only attempt to guess the byte order at the point where the byte
+  order is actually needed. This may make it a bit faster, but more
+  importantly it may prevent some spurious warnings about the byte order
+  being guessed.
+* No longer exits with a traceback on Ctrl-C or a broken pipe.
+
 Version 2.0
 
 * Completely new command line interface. This makes it much more

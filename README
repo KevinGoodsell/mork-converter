@@ -201,13 +201,11 @@ Known Issues
   resulting in some strange characters in the result. This problem
   primarily affects email header fields in .msf files. The encoding
   options are intended to help resolve this.
-* The parsing is rather slow. This seems to be an inherent issue with
-  PLY.
 * The DecodeCharacters filter in encodings.py requires special knowledge
-  of what fields in the database use UTF-16 encoding.There may be
+  of what fields in the database use UTF-16 encoding. There may be
   missing fields that need to be added to the filter in order for it to
   correctly decode fields of that type.
 * A similar warning applies to various other filters: some of them
-  (ConvertTimes, DecodeMimeHeaders) require a list of the fields that the
-  filter conversion will be applied to. This list is found in the filter
-  source and may need to be updated with missing fields.
+  (FieldConverter, DecodeMimeHeaders) require a list of the fields that
+  the filter conversion will be applied to. This list is found in the
+  filter source and may need to be updated with missing fields.

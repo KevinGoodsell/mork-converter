@@ -32,7 +32,7 @@ import re
 
 from MorkDB.filters import enumerate_filters, list_filters
 
-version = '2.0'
+version = '2.1'
 
 def print_tokens(f):
     import MorkDB.morklex as morklex
