@@ -4,19 +4,19 @@ NOTE: THIS IS NOT COMPLETE! DO NOT RELY ON IT!
 
 Mork 1.4 File Format Description
 Kevin Goodsell
-Sun, 20 Dec 2009 12:18:19 -0800
+Mon, 09 Aug 2010 10:43:28 -0700
 
 1. Logical Structure
 
 Mork files logically consist of zero or more Tables. Each table consists
-of zero or more rows and optional metadata in the form of a Meta-Table.
-Each row consists of zero or more Cells and optional metadata in the
+of zero or more rows and optional meta-data in the form of a Meta-Table.
+Each row consists of zero or more Cells and optional meta-data in the
 form of a Meta-Row. Each cell is a Column-Value pair.
 
 This makes Mork Tables structurally similar to a spreadsheet or an HTML
 table, with rows and columns, and entries appearing in the cells formed
 by the intersection of a row and column. One important difference is
-that the Columns are not necessarily the same from one row to the next.
+that the Columns are not necessarily the same from one Row to the next.
 A Mork Row may include arbitrary Columns.
 
 While the basic structure of the data is fairly simple, the Mork format
@@ -41,20 +41,23 @@ functional significance. The double-slashes indicate that it is a
 comment, so the parser ignores it. The text of the comment is hard-coded
 in morkWriter.cpp[2], so the character encoding it gives can never be
 anything other than iso-8859-1. This may simply be a hint to human
-readers.
+readers, or an unimplemented feature.
 
-Mork files can indicate end-of-line using several conventions. According
-to the documentation[1], any of the combinations 0x0A, 0x0D, 0x0A0D, and
-0x0D0A are allowed. This covers the three common conventions (Unix,
-DOS/Windows, and Macintosh) and the uncommon 'newline carriage-return'.
+Mork files can indicate end-of-line using several conventions. Any of
+the combinations 0x0A, 0x0D, 0x0A0D, and 0x0D0A are allowed. This covers
+the three common conventions (Unix, DOS/Windows, and Macintosh) and the
+uncommon 'newline carriage-return'.
 
 2.2 Syntax Elements
+
+A Mork file is a sequence of Mork objects, including Dicts, Rows,
+Tables, and Groups.
 
 Here is a short example Mork file for reference (Example 1):
 
 // <!-- <mdb:mork:z v="1.4"/> -->
 < <(a=c)> // (f=iso-8859-1)
-  (80=Category)(81=FilmTitle)(82=Winner)(83=Other)(84=ns:awards)>
+  (80=Category)(81=FilmTitle)(82=Winner)(83=Other)(84=awards)>
 
 <(80=Best Picture)(81=Annie Hall)(82=Best Director)(83=Woody Allen)(84
   =Best Actor in a Leading Role)(85=Richard Dreyfuss)(86=The Goodbye Girl)
@@ -82,9 +85,19 @@ of the line. While this seems to be undocumented, the source code
 (morkParser.cpp[2]) indicates that C-style comments are also permitted,
 and may be nested. These appear to be unused in practice.
 
-There are some places where comments are not recognized. The only
-example I know of (and the only one that's likely to be relevant in real
-Mork files) is in Cell and Alias values.
+It's difficult to determine exactly where comments can and cannot appear
+from the source. Places comments cannot appear include inside a Name,
+after the ':' in a Mid, after the '(' at the beginning of a Cell, inside
+a hex value, and inside the value part of a Cell or Alias. Other than
+that, comments can appear almost anywhere. There are some surprising
+places where comments can appear. For example, a comment can appear
+before any hex value, which means they can show up after the '^' in a
+reference, or after the @$${ in a Group. Comments can also appear before
+the '=' or '^' in a Cell Value. Perhaps the most surprising is that
+comments can apparently show up before the '=' in an Alias, but only if
+there is at least one whitespace character before the comment.
+
+Fortunately, real Mork files use very few comments.
 
 Mork files begin with the following "magic" identifier in the form of a
 comment:
@@ -116,7 +129,7 @@ Each Dict defines aliases for a particular namespace or scope. In
 principle there can be an arbitrary number of scopes, but in practice
 only two are used: 'a' and 'c', which are abbreviations for 'atom' and
 'column', respectively. The 'a' scope defines aliases used in Cell
-values, and the 'c' scope defines aliases used in Cell columns. The
+Values, and the 'c' scope defines aliases used in Cell Columns. The
 scope for a Dict is given in the Meta-Dict, or else defaults to 'a'.
 
 Typical Mork files have only one Dict for the 'c' scope (the first thing
@@ -127,7 +140,7 @@ new aliases.
 In Example 1, there are two Dicts:
 
 < <(a=c)>
-  (80=Category)(81=FilmTitle)(82=Winner)(83=Other)(84=ns:awards)>
+  (80=Category)(81=FilmTitle)(82=Winner)(83=Other)(84=awards)>
 
 <(80=Best Picture)(81=Annie Hall)(82=Best Director)(83=Woody Allen)(84
   =Best Actor in a Leading Role)(85=Richard Dreyfuss)(86=The Goodbye Girl)
@@ -135,10 +148,17 @@ In Example 1, there are two Dicts:
 
 The first Dict is for the 'c' scope and the second is for the 'a' scope.
 
+The hex alias values in Dicts are always greater than or equal to 0x80.
+This appears to be because the values 0x00-0x7F are predefined as
+aliases for the single-byte string with the same value, however these
+predefined aliases may be unused in practice. It's not even clear if the
+source actually supports this usage (nothing about this section of the
+source could be considered "clear"), but it is referenced in a comment
+near the top of morkAtomSpace.cpp[2].
+
 2.2.3 Aliases
 
-Aliases and Cells are very similar, but Aliases are specific to Dicts.
-Aliases have this form:
+Aliases occur inside Dicts and have this form:
 
 (A3=Arbitrary text)
 
@@ -148,7 +168,7 @@ escape sequences). This makes the hexadecimal value an alias for the
 text on the right.
 
 In the file morkParser.cpp[2], function ReadAlias, there's another type
-or Alias that seems to be unused in practice, and probably not fully
+of Alias that seems to be unused in practice, and is probably not fully
 supported by the code. It looks something like:
 
 (A3<f=c>=Arbitrary text) or (A3<f=^BF>=Arbitrary text)
@@ -235,10 +255,10 @@ pretty much like the scopes that Dict aliases occupy, but row namespaces
 tend to be more descriptive. Here's an example:
 
 < <(a=c)> (80=ns:addrbk:db:row:scope:data:all)>
-[4:^80(^23^A8)(^24^28)]
+[4:^80(^93^A8)(^94^A9)]
 
 When a Row identifier lacks an explicit scope, it inherits the scope
-from the table that it's contained in.
+from the Table that it is contained in.
 
 2.2.6 Tables
 
@@ -254,10 +274,10 @@ braces. In Example 1, this is the table:
 
 Here, the first 1 is the hexadecimal identifier for the Table, and the
 Table namespace is given by the reference ^84. The reference is looked
-up in the 'c' Dict scope, and translates to "ns:awards" in this case.
+up in the 'c' Dict scope, and translates to "awards" in this case.
 
 This Table contains four Rows, but there are no specific limits on the
-number of Rows a table can contain. Tables with zero Rows are also
+number of Rows a Table can contain. Tables with zero Rows are also
 permitted.
 
 Table Rows can be described directly within the Table as they are in
@@ -290,6 +310,12 @@ seem to appear in real Mork files. Instead, Meta-Rows appear as a Row
 inside a Meta-Table. Both usages are supported by the Mozilla Mork
 parser (in morkParser.cpp[2] see how ReadRow calls ReadMeta, and how
 ReadMeta handles the '[' character).
+
+Aside from the Meta-Row exception, meta-objects generally appear as a
+nested object: a Meta-Dict looks like a Dict inside a Dict (delimited
+with angle brackets), and a Meta-Table looks like a Table inside a Table
+(delimited by curly braces). The items inside the meta-object are
+exclusively Cells (aside from the Meta-Row exception).
 
 2.2.7.1 Meta-Dicts
 
@@ -335,7 +361,7 @@ find the code that handles this.
 
 Additionally, Meta-Rows are usually (maybe always) found in Meta-Tables.
 A Meta-Row in a Meta-Table look just like a Row in a Table, and seem to
-contain various application-specific metadata for the Table. The
+contain various application-specific meta-data for the Table. The
 previous Meta-Table example with the addition of a Meta-Row would look
 like this:
 
@@ -355,7 +381,7 @@ The Meta-Row can also be included by reference:
   // ... Rows go here
 }
 
-2.2.8 Groups (AKA Transactions)
+2.2.8 Groups
 
 Mork Groups represent a set of changes to make to the in-memory Mork
 objects. Groups are delimited by a string of characters that includes a
@@ -388,7 +414,7 @@ existing Table.
 
 // <!-- <mdb:mork:z v="1.4"/> -->
 < <(a=c)> // (f=iso-8859-1)
-  (80=Category)(81=FilmTitle)(82=Winner)(83=Other)(84=ns:awards)>
+  (80=Category)(81=FilmTitle)(82=Winner)(83=Other)(84=awards)>
 
 <(80=Best Picture)(81=Annie Hall)(82=Best Director)(83=Woody Allen)(84
   =Best Actor in a Leading Role)(85=Richard Dreyfuss)(86=The Goodbye Girl)
