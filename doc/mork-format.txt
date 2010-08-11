@@ -77,7 +77,76 @@ Row | Category                       | Winner           | FilmTitle        | Oth
   3 | Best Actor in a Leading Role   | Richard Dreyfuss | The Goodbye Girl |
   4 | Best Actress in a Leading Role | Diane Keaton     | Annie Hall       |
 
-2.2.1 Comments and Magic
+2.2.1 Names
+
+Mork Names are just text strings (with some restrictions) used for
+Columns and object namespaces. Names are defined in the source file
+morkCh.h[2] with the morkCh_IsName and morkCh_IsMore macros (see
+morkCh_Type in morkCh.cpp for character classifications), where the
+first indicates a character that can begin a Name and the second
+indicates a character that can appear after the first character of a
+Name.
+
+The first character of a Name may be any ASCII letter, '_' or ':'.
+Subsequent characters may be any of those plus '!', '+', '-', and '?'.
+
+2.2.2 Values
+
+Mork Values are text strings used for arbitrary data. While they appear
+as plain text in Mork files, they can encode arbitrary byte strings.
+Values can include any ASCII character in the range 0x20 to 0x7E, but
+the '$', ')', and '\' characters can't be included directly because they
+have special meanings (described in the section "Character Escaping").
+Other byte values may be included with escape sequences.
+
+2.2.3 References
+
+Mork References are a way of indicating a Name or Value by using a
+reference to an Alias. The Mork reader replaces the Reference with the
+referred-to Name or Value. This is described in more detail in the
+section "Dictionaries".
+
+References appear as a '^' character follow by a hexadecimal identifier:
+
+^9A
+
+There are some places where non-Alias Mork objects are referred to by
+their hex identifier without using a '^'. These two usages should not be
+confused. References beginning with '^' refer specifically to Aliases.
+
+References must be interpreted by looking up the Alias in a specific
+Dictionary. The Dictionary to use depends on the context, but it can
+also be given explicitly by adding a ':' followed by the dictionary
+scope:
+
+^9A:a
+
+The Dictionary scope can also be given as a reference, but in practice
+this is probably never done.
+
+2.2.4 Mids
+
+Mork identifiers (or "Mids" as they are referred to in the source) are
+hexadecimal identifiers for particular objects. All Tables, Rows, and
+Aliases have a Mid. References are actually a '^' followed by a Mid for
+the object being referenced.
+
+Mids have three basic forms. The first form is simply a hex identifier.
+The second form is a hex identifier followed by a colon and a scope (or
+namespace) name:
+
+F2:scope_name
+
+The third form is the same, but replaces the scope with a Reference:
+
+F2:^8A
+
+Since the Reference itself uses a Mid, this definition appears
+recursive. However, the ReadMid function in morkParser.cpp[2] is not
+defined recursively, and only allows a simple hex identifier after the
+'^'.
+
+2.2.5 Comments and Magic
 
 Mork files can include comments using C++ comment syntax. Two forward
 slashes indicate the beginning of a comment which continues to the end
@@ -88,16 +157,18 @@ and may be nested. These appear to be unused in practice.
 It's difficult to determine exactly where comments can and cannot appear
 from the source. Places comments cannot appear include inside a Name,
 after the ':' in a Mid, after the '(' at the beginning of a Cell, inside
-a hex value, and inside the value part of a Cell or Alias. Other than
+a hex value, and inside the Value part of a Cell or Alias. Other than
 that, comments can appear almost anywhere. There are some surprising
 places where comments can appear. For example, a comment can appear
 before any hex value, which means they can show up after the '^' in a
-reference, or after the @$${ in a Group. Comments can also appear before
+Reference, or after the @$${ in a Group. Comments can also appear before
 the '=' or '^' in a Cell Value. Perhaps the most surprising is that
 comments can apparently show up before the '=' in an Alias, but only if
 there is at least one whitespace character before the comment.
 
-Fortunately, real Mork files use very few comments.
+Fortunately, real Mork files only use a few comments and only in
+predictable locations, so a parser does not necessarily need to handle
+all these strange cases.
 
 Mork files begin with the following "magic" identifier in the form of a
 comment:
@@ -106,10 +177,10 @@ comment:
 
 The 1.4 would of course be different for other Mork versions.
 
-2.2.2 Dictionaries
+2.2.6 Dictionaries
 
 Mork Dictionaries or "Dicts" are used to define numerical aliases for
-strings (meaning Columns and Values). This is simply a file size
+strings (meaning Names and Values). This is simply a file size
 optimization and does not add anything functional. It does however add
 substantial complexity to the files.
 
@@ -129,8 +200,9 @@ Each Dict defines aliases for a particular namespace or scope. In
 principle there can be an arbitrary number of scopes, but in practice
 only two are used: 'a' and 'c', which are abbreviations for 'atom' and
 'column', respectively. The 'a' scope defines aliases used in Cell
-Values, and the 'c' scope defines aliases used in Cell Columns. The
-scope for a Dict is given in the Meta-Dict, or else defaults to 'a'.
+Values, and the 'c' scope defines aliases used in Cell Columns and
+namespaces. The scope for a Dict is given in the Meta-Dict, or else
+defaults to 'a'.
 
 Typical Mork files have only one Dict for the 'c' scope (the first thing
 in the file following the magic line), and several for the 'a' scope.
@@ -156,7 +228,7 @@ source actually supports this usage (nothing about this section of the
 source could be considered "clear"), but it is referenced in a comment
 near the top of morkAtomSpace.cpp[2].
 
-2.2.3 Aliases
+2.2.7 Aliases
 
 Aliases occur inside Dicts and have this form:
 
@@ -174,47 +246,47 @@ supported by the code. It looks something like:
 (A3<f=c>=Arbitrary text) or (A3<f=^BF>=Arbitrary text)
 
 This is probably intended to specify an alternate character encoding for
-the Alias value, but again, it appears to be unused and not fully
+the Alias Value, but again, it appears to be unused and not fully
 supported.
 
-2.2.4 Cells
+2.2.8 Cells
 
-Cells function as key-value pairs. They form the basis of Mork Rows,
-where the key represents a column name and the value represents the data
-in that column of the row. They also define the meta-data in
-Meta-Tables, Meta-Rows, and Meta-Dicts.
+Cells function as Name-Value pairs. They form the basis of Mork Rows,
+where the Name represents a column and the Value represents the data in
+that column of the Row. They also define the meta-data in Meta-Tables,
+Meta-Rows, and Meta-Dicts.
 
 Like Aliases, Cells are delimited by parentheses. The most basic form of
 a Cell looks pretty much like an Alias:
 
-(keyName=arbitrary value text)
+(columnName=arbitrary value text)
 
-Here the key is 'keyName' and the value is 'arbitrary value text'. It's
-also possible for the value to be empty:
+Here the left side of the '=' is a Name and the right side is a Value.
+It's also possible for the Value to be empty:
 
-(keyName=)
+(columnName=)
 
-Both the key and the value can optionally be replaced with an alias
-previously defined in a Dict. When the key is replaced, it looks like
-this:
+Both the Name and the Value can optionally be replaced with a Reference
+to an Alias previously defined in a Dict. When the Name is replaced, it
+looks like this:
 
 (^92=arbitrary value text)
 
-When the value is replaced, the '=' sign is dropped:
+When the Value is replaced, the '=' sign is dropped:
 
-(keyName^A5)
+(columnName^A5)
 
-It's common to see a lot of cells with both the key and value replaced
-by aliases:
+It's common to see a lot of Cells with both the Name and Value replaced
+by References:
 
 (^92^A5)
 
-When an alias is used for the key, it is looked up in the 'c' scope
-(this was described in the 'Dictionaries' section). For the value, it is
+When a Reference is used for the Name, it is looked up in the 'c' scope
+(this was described in the 'Dictionaries' section). For the Value, it is
 looked up in the 'a' scope.
 
-It's also possible for alias scopes to be given explicitly, which looks
-like this:
+It's also possible for Reference scopes to be given explicitly, which
+looks like this:
 
 (^92:c^A5:a)
 (^92:c^A5)
@@ -229,17 +301,17 @@ Confusingly, scopes can also be replaced with aliases:
 
 A scope alias is looked up in the 'c' scope.
 
-2.2.5 Rows
+2.2.9 Rows
 
 Rows are the typical container for Cells. In the Mork file syntax they
 are delimited with square brackets. Here's a row from Example 1:
 
   [2 (^80^82)(^81^81)(^82^83)(^83=)]
 
-Here the 2 is the hexadecimal identifier for the row, which contains
-four Cells (which represent the data in four columns of the row).
+Here the 2 is the Mid for the row, which contains four Cells (which
+represent the data in four columns of the row).
 
-Mork files will often contain multiple rows with the same identifier.
+Mork files will often contain multiple rows with the same Mid.
 Duplicate rows generally appear inside Groups (though the code seems to
 support duplicates anywhere rows can appear). This has the effect of
 updating the in-memory Row with new or replacement items. Row updates
@@ -250,21 +322,21 @@ any Table could be inserted into a Table later, or it could be an update
 for a Row that is already in a Table. In some cases rows are created but
 never used in any table. Presumably these rows can be ignored.
 
-The Row identifier belongs to a particular namespace or scope. This is
-pretty much like the scopes that Dict aliases occupy, but row namespaces
-tend to be more descriptive. Here's an example:
+The Row Mid belongs to a particular namespace or scope. This is pretty
+much like the scopes that Dict aliases occupy, but row namespaces tend
+to be more descriptive. Here's an example:
 
 < <(a=c)> (80=ns:addrbk:db:row:scope:data:all)>
 [4:^80(^93^A8)(^94^A9)]
 
-When a Row identifier lacks an explicit scope, it inherits the scope
-from the Table that it is contained in.
+When a Row Mid lacks an explicit scope, it inherits the scope from the
+Table that it is contained in.
 
-2.2.6 Tables
+2.2.10 Tables
 
 Tables are the basic container for Rows. Like Rows, Tables have a unique
-hexadecimal identifier and a namespace. Tables are delimited with curly
-braces. In Example 1, this is the table:
+Mid in a particular namespace. Tables are delimited with curly braces.
+In Example 1, this is the table:
 
 {1:^84
   [1 (^80^80)(^81^81)(^82^81)(^83=)]
@@ -272,9 +344,9 @@ braces. In Example 1, this is the table:
   [3 (^80^84)(^81^86)(^82^85)(^83=)]
   [4 (^80^87)(^81^81)(^82^88)(^83=)]}
 
-Here, the first 1 is the hexadecimal identifier for the Table, and the
-Table namespace is given by the reference ^84. The reference is looked
-up in the 'c' Dict scope, and translates to "awards" in this case.
+Here, the 1:^84 is the Table Mid, so the Table namespace is given by
+the Reference ^84. The Reference is looked up in the 'c' Dict scope, and
+translates to "awards" in this case.
 
 This Table contains four Rows, but there are no specific limits on the
 number of Rows a Table can contain. Tables with zero Rows are also
@@ -300,7 +372,7 @@ The two Row forms can also be mixed:
   3
   [4 (^80^87)(^81^81)(^82^88)(^83=)]}
 
-2.2.7 Meta-Dicts, Meta-Tables, and Meta-Rows
+2.2.11 Meta-Dicts, Meta-Tables, and Meta-Rows
 
 Meta-Dicts, Meta-Tables, and Meta-Rows contain meta-data in the form of
 Cells. While Meta-Dicts occur inside Dicts, and Meta-Tables occur inside
@@ -317,7 +389,7 @@ with angle brackets), and a Meta-Table looks like a Table inside a Table
 (delimited by curly braces). The items inside the meta-object are
 exclusively Cells (aside from the Meta-Row exception).
 
-2.2.7.1 Meta-Dicts
+2.2.11.1 Meta-Dicts
 
 Example 1 includes the following Meta-Dict:
 
@@ -337,7 +409,7 @@ suspect it's related to the comment described in the Encoding section:
 
 // (f=iso-8859-1)
 
-2.2.7.2 Meta-Tables
+2.2.11.2 Meta-Tables
 
 Meta-Tables typically contain two columns, 'k' and 's'. These seem to
 stand for 'kind' and 'status', respectively. Based on the source[2],
@@ -381,11 +453,12 @@ The Meta-Row can also be included by reference:
   // ... Rows go here
 }
 
-2.2.8 Groups
+2.2.12 Groups
 
 Mork Groups represent a set of changes to make to the in-memory Mork
 objects. Groups are delimited by a string of characters that includes a
-hexadecimal identifier. Here's an example of an empty Group:
+hexadecimal identifier (Group identifiers are not Mids, but simple
+hexadecimal values). Here's an example of an empty Group:
 
 @$${2{@
 @$$}2}@
@@ -430,11 +503,11 @@ existing Table.
 {1:^84 [5 (^80^89)(^81^8A)(^82^8B)(^83=)]}
 @$$}1}@
 
-2.2.8.1 Deleting a Row
+2.2.12.1 Deleting a Row
 
-A Row can be deleted from a Table by prefixing the Row identifier with
-'-'. For example, to delete Row 2 from Example 1, a Group like this
-might be used:
+A Row can be deleted from a Table by prefixing the Row Mid with '-'. For
+example, to delete Row 2 from Example 1, a Group like this might be
+used:
 
 @$${2{@
 {1:^84 -2}
@@ -448,11 +521,11 @@ Row deletions and insertions can be mixed:
 {1:^84 -2 [6 (^80^8C)(^81^8E)(^82^8D)(^83=)]}
 @$$}2}@
 
-2.2.8.2 Deleting All Rows From a Table
+2.2.12.2 Deleting All Rows From a Table
 
 All the Rows in a Table can be deleted with a single operation. This is
 done by placing a '-' at the beginning of the Table, before the Table
-identifier:
+Mid:
 
 @$${2E{@
 {-9:^82}
@@ -461,20 +534,20 @@ identifier:
 This syntax can also be mixed with Row insertions to replace all Rows in
 a Table.
 
-2.2.8.3 Moving a Row
+2.2.12.3 Moving a Row
 
-Moving a Row within a Table is accomplished by including the Row
-identifier, followed by a '!', followed by a hexadecimal number giving
-the new position in the Table. The position is a 0-based index into the
-sequence of Rows. Other Row positions are shifted to make the slot
-available and/or fill in the vacated slot as needed. For example, moving
-Row 3 to the beginning of the Table in Example 1 would look like this:
+Moving a Row within a Table is accomplished by including the Row Mid,
+followed by a '!', followed by a hexadecimal number giving the new
+position in the Table. The position is a 0-based index into the sequence
+of Rows. Other Row positions are shifted to make the slot available
+and/or fill in the vacated slot as needed. For example, moving Row 3 to
+the beginning of the Table in Example 1 would look like this:
 
 @$${3{@
 {1:^84 3 ! 0}
 @$$}3}@
 
-2.2.8.4 Deleting a Cell
+2.2.12.4 Deleting a Cell
 
 Deleting a Cell within a Row also uses the '-' operator. The operator is
 placed inside the Row, in front of the Cell that will be deleted:
@@ -487,11 +560,10 @@ This isn't used in any Mork files I've encountered, but appears to be
 supported in the source[2] (see the call to OnMinusCell in
 morkParser.cpp).
 
-2.2.8.5 Deleting All Cells From a Row
+2.2.12.5 Deleting All Cells From a Row
 
 All the Cells in a Row can be deleted with a singe operation. This is
-done by placing a '-' at the beginning of the Row, before the Row
-identifier:
+done by placing a '-' at the beginning of the Row, before the Row Mid:
 
 @$${1B{@
 [- 5:^90]
@@ -502,7 +574,7 @@ in a Row.
 
 3. Character Escaping
 
-Some characters in Cell and Alias values need an alternative
+Some characters in Cell and Alias Values need an alternative
 representation to avoid conflicting with Mork syntax. Mork provides two
 kinds of special character sequences for representing these characters.
 
@@ -511,7 +583,7 @@ kinds of special character sequences for representing these characters.
 The first type of special character sequence in Mork is introduced with
 the backslash character, '\'. This removes any special meaning from the
 character that follows, and is particularly useful for including the ')'
-character in Cell and Alias values (since this character would otherwise
+character in Cell and Alias Values (since this character would otherwise
 terminate the Cell or Alias).
 
 Another common use for backslash escapes is line continuation. When a
@@ -536,7 +608,7 @@ may be represented as UTF-16 text in an Alias this way:
 
 <(83=$03$26s$00n$00o$00w$00m$00a$00n$00$03$26)>
 
-Note that the value is just a list of bytes. Interpreting this value as
+Note that the Value is just a list of bytes. Interpreting this value as
 UTF-16 is up to the application.
 
 [1] https://developer.mozilla.org/En/Mork_Structure
