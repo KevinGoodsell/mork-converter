@@ -1,10 +1,7 @@
-==============================================
-NOTE: THIS IS NOT COMPLETE! DO NOT RELY ON IT!
-==============================================
-
 Mork 1.4 File Format Description
+Version 1.0
+Sat, 14 Aug 2010 11:20:08 -0700
 Kevin Goodsell
-Mon, 09 Aug 2010 10:43:28 -0700
 
 1. Logical Structure
 
@@ -236,9 +233,8 @@ Aliases occur inside Dicts and have this form:
 (A3=Arbitrary text)
 
 The left side of the '=' sign is a hexadecimal integer, and the right
-side can be any text (though some characters have to be represented with
-escape sequences). This makes the hexadecimal value an alias for the
-text on the right.
+side is a Value. This makes the hexadecimal identifier an alias for the
+Value.
 
 In the file morkParser.cpp[2], function ReadAlias, there's another type
 of Alias that seems to be unused in practice, and is probably not fully
@@ -286,8 +282,9 @@ When a Reference is used for the Name, it is looked up in the 'c' scope
 (this was described in the 'Dictionaries' section). For the Value, it is
 looked up in the 'a' scope.
 
-It's also possible for Reference scopes to be given explicitly, which
-looks like this:
+Because the References use Mids, in principle they can include a scope,
+either directly or by Reference. In practice this probably doesn't
+happen, but it would look like this:
 
 (^92:c^A5:a)
 (^92:c^A5)
@@ -296,11 +293,11 @@ looks like this:
 These are all equivalent to the previous example because the scopes used
 are the same as the default scopes.
 
-Confusingly, scopes can also be replaced with aliases:
+Using a Reference for the scope might look like this:
 
 (^92:^E8^A5)
 
-A scope alias is looked up in the 'c' scope.
+References for scopes are looked up in the Dict for the 'c' scope.
 
 2.2.9 Rows
 
@@ -324,8 +321,8 @@ for a Row that is already in a Table. In some cases rows are created but
 never used in any table. Presumably these rows can be ignored.
 
 The Row Mid belongs to a particular namespace or scope. This is pretty
-much like the scopes that Dict aliases occupy, but row namespaces tend
-to be more descriptive. Here's an example:
+much like the scopes that Dict aliases occupy, but row scopes tend to be
+more descriptive. Here's an example:
 
 < <(a=c)> (80=ns:addrbk:db:row:scope:data:all)>
 [4:^80(^93^A8)(^94^A9)]
@@ -433,8 +430,8 @@ mBuilder_TableStatus in the OnValue function in morkBuilder.cpp[2] to
 find the code that handles this.
 
 Additionally, Meta-Rows are usually (maybe always) found in Meta-Tables.
-A Meta-Row in a Meta-Table look just like a Row in a Table, and seem to
-contain various application-specific meta-data for the Table. The
+A Meta-Row in a Meta-Table looks just like a Row in a Table, and seems
+to contain various application-specific meta-data for the Table. The
 previous Meta-Table example with the addition of a Meta-Row would look
 like this:
 
@@ -547,6 +544,11 @@ the beginning of the Table in Example 1 would look like this:
 @$${3{@
 {1:^84 3 ! 0}
 @$$}3}@
+
+Based on ReadRow in morkParser.cpp[2] (the first call to ReadRowPos), it
+appears that a row move operation can also appear after a row object,
+combining the row add/update and row move operations. In practice this
+might not be used.
 
 2.2.12.4 Deleting a Cell
 
