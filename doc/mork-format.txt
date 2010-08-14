@@ -3,6 +3,18 @@ Version 1.0
 Sat, 14 Aug 2010 11:20:08 -0700
 Kevin Goodsell
 
+0. License
+
+This work is licensed under a Creative Commons
+Attribution-NonCommercial-ShareAlike 3.0 Unported License. To view a
+copy of this license, visit
+http://creativecommons.org/licenses/by-nc-sa/3.0/; or, send a letter to
+Creative Commons, 171 2nd Street, Suite 300, San Francisco, California,
+94105, USA.
+
+Attributions should include my name (Kevin Goodsell) and the web site
+that hosts this project, http://github.com/KevinGoodsell/mork-converter.
+
 1. Logical Structure
 
 Mork files logically consist of zero or more Tables. Each table consists
