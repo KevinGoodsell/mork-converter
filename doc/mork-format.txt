@@ -1,7 +1,8 @@
 Mork 1.4 File Format Description
 Version 1.0
 Sat, 14 Aug 2010 11:20:08 -0700
-Kevin Goodsell
+
+Copyright 2010 Kevin Goodsell
 
 0. License
 
