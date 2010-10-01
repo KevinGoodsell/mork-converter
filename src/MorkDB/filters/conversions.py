@@ -23,8 +23,21 @@ from filterbase import Filter
 # Converters for different field types:
 
 class _FieldConverter(object):
+    description = None
+    # To distinguish converters that may be generally useful from those that
+    # the user will probably never want to use directly, they are marked as
+    # generic or not generic, respectively.
+    generic = False
+
     def convert(self, opts, value):
         raise NotImplementedError();
+
+class _NullConverter(_FieldConverter):
+    description = 'No-op converter. Leaves the value unchanged.'
+    generic = True
+
+    def convert(self, opts, value):
+        return value
 
 class _Int(_FieldConverter):
     def __init__(self, base):
@@ -39,7 +52,21 @@ class _Int(_FieldConverter):
     def _to_int(self, value):
         return int(value, self._base)
 
+class _IntHex(_Int):
+    description = 'Converts hexadecimal integer values to decimal.'
+    generic = True
+
+    def __init__(self):
+        _Int.__init__(self, 16)
+
 class _SignedInt32(_Int):
+    description = ('Converts 32-bit hexadecimal integer values to (possibly '
+                   'negative) decimal values.')
+    generic = True
+
+    def __init__(self):
+        _Int.__init__(self, 16)
+
     def convert(self, opts, value):
         if opts.no_base:
             return value
@@ -52,6 +79,9 @@ class _SignedInt32(_Int):
         return unicode(ival)
 
 class _HierDelim(_Int):
+    description = ("Converter for the 'hierDelim' column from folder cache "
+                   "files (panacea.dat).")
+
     def __init__(self):
         _Int.__init__(self, 16)
 
@@ -105,6 +135,8 @@ class _Flags(_Int):
 # mailnews/base/public/nsMsgMessageFlags.idl nsMsgMessageFlags
 # Message "flags" include some non-flag parts.
 class _MsgFlags(_Flags):
+    description = 'Converter for message and thread flags.'
+
     _flag_vals = [u'Read', u'Replied', u'Marked', u'Expunged', u'HasRe',
                   u'Elided', None, u'Offline', u'Watched', u'SenderAuthed',
                   u'Partial', u'Queued', u'Forwarded', None, None, None,
@@ -145,6 +177,8 @@ class _MsgFlags(_Flags):
         return u' '.join(flags)
 
 class _ImapFlags(_Flags):
+    description = 'Converter for IMAP folder flags.'
+
     _flag_vals = ['kImapMsgSeenFlag', 'kImapMsgAnsweredFlag',
                   'kImapMsgFlaggedFlag', 'kImapMsgDeletedFlag',
                   'kImapMsgDraftFlag', 'kImapMsgRecentFlag',
@@ -173,6 +207,56 @@ class _ImapFlags(_Flags):
 
         return u' '.join(flags)
 
+class _MsgFolderFlags(_Flags):
+    description = 'Converts message folder flags.'
+
+    def __init__(self):
+        # mailnews/base/public/nsMsgFolderFlags.idl
+        _Flags.__init__(self, ['Newsgroup', 'NewsHost', 'Mail', 'Directory',
+                               'Elided', 'Virtual', 'Subscribed', 'Unused2',
+                               'Trash', 'SentMail', 'Drafts', 'Queue', 'Inbox',
+                               'ImapBox', 'Archive', 'ProfileGroup', 'Unused4',
+                               'GotNew', 'ImapServer', 'ImapPersonal',
+                               'ImapPublic', 'ImapOtherUser', 'Templates',
+                               'PersonalShared', 'ImapNoselect',
+                               'CreatedOffline', 'ImapNoinferiors', 'Offline',
+                               'OfflineEvents', 'CheckNew', 'Junk',
+                               'Favorite'])
+
+class _AclFlags(_Flags):
+    description = 'Decodes IMAP Access Control List flags.'
+
+    _flag_vals = ['IMAP_ACL_READ_FLAG', 'IMAP_ACL_STORE_SEEN_FLAG',
+                  'IMAP_ACL_WRITE_FLAG', 'IMAP_ACL_INSERT_FLAG',
+                  'IMAP_ACL_POST_FLAG', 'IMAP_ACL_CREATE_SUBFOLDER_FLAG',
+                  'IMAP_ACL_DELETE_FLAG', 'IMAP_ACL_ADMINISTER_FLAG',
+                  'IMAP_ACL_RETRIEVED_FLAG', 'IMAP_ACL_EXPUNGE_FLAG',
+                  'IMAP_ACL_DELETE_FOLDER']
+
+    def __init__(self):
+        _Flags.__init__(self, self._flag_vals)
+
+class _BoxFlags(_Flags):
+    description = 'Decodes flags for IMAP mailboxes.'
+
+    _flag_vals = ['kMarked', 'kUnmarked', 'kNoinferiors', 'kNoselect',
+                  'kImapTrash', 'kJustExpunged', 'kPersonalMailbox',
+                  'kPublicMailbox', 'kOtherUsersMailbox', 'kNameSpace',
+                  'kNewlyCreatedFolder', 'kImapDrafts', 'kImapSpam',
+                  'kImapSent', 'kImapInbox', 'kImapAllMail', 'kImapXListTrash']
+
+    def __init__(self):
+        _Flags.__init__(self, self._flag_vals, 'kNoFlags')
+
+class _ViewFlags(_Flags):
+    description = 'Converts flags for folder views.'
+
+    _flag_vals = ['kThreadedDisplay', None, None, 'kShowIgnored',
+                  'kUnreadOnly', 'kExpandAll', 'kGroupBySort']
+
+    def __init__(self):
+        _Flags.__init__(self, self._flag_vals, 'kNone')
+
 class _Enumeration(_Int):
     def __init__(self, values, default=None, base=16):
         _Int.__init__(self, base)
@@ -200,13 +284,108 @@ class _Enumeration(_Int):
         else:
             return result
 
+class _CardType(_Enumeration):
+    description = 'Converter for address book entry type.'
+
+    def __init__(self):
+        _Enumeration.__init__(self, [u'normal', u'AOL groups',
+                                     u'AOL additional email'],
+                              default=u'normal')
+
+class _CurrentView(_Enumeration):
+    description = 'Converts current folder view.'
+
+    def __init__(self):
+        _Enumeration.__init__(self, [u'kViewItemAll', u'kViewItemUnread',
+                                     u'kViewItemTags', u'kViewItemNotDeleted',
+                                     None, None, None, u'kViewItemVirtual',
+                                     u'kViewItemCustomize',
+                                     u'kViewItemFirstCustom'])
+
+class _PreferMailFormat(_Enumeration):
+    description = 'Converts preferred mail format.'
+
+    def __init__(self):
+        _Enumeration.__init__(self, [u'unknown', u'plaintext', u'html'])
+
+class _RetainBy(_Enumeration):
+    description = 'Converts mail retention policy.'
+
+    def __init__(self):
+        _Enumeration.__init__(self, [None, 'nsMsgRetainAll',
+                                     'nsMsgRetainByAge',
+                                     'nsMsgRetainByNumHeaders'])
+
+class _ViewType(_Enumeration):
+    description = 'Converts type of folder view.'
+
+    def __init__(self):
+        _Enumeration.__init__(self, ['eShowAllThreads', None,
+                                     'eShowThreadsWithUnread',
+                                     'eShowWatchedThreadsWithUnread',
+                                     'eShowQuickSearchResults',
+                                     'eShowVirtualFolderResults',
+                                     'eShowSearch'])
+
+class _SortType(_Enumeration):
+    description = 'Converts folder sort type.'
+
+    def __init__(self):
+        _Enumeration.__init__(self, {0x11 : 'byNone',
+                                     0x12 : 'byDate',
+                                     0x13 : 'bySubject',
+                                     0x14 : 'byAuthor',
+                                     0x15 : 'byId',
+                                     0x16 : 'byThread',
+                                     0x17 : 'byPriority',
+                                     0x18 : 'byStatus',
+                                     0x19 : 'bySize',
+                                     0x1a : 'byFlagged',
+                                     0x1b : 'byUnread',
+                                     0x1c : 'byRecipient',
+                                     0x1d : 'byLocation',
+                                     0x1e : 'byTags',
+                                     0x1f : 'byJunkStatus',
+                                     0x20 : 'byAttachments',
+                                     0x21 : 'byAccount',
+                                     0x22 : 'byCustom',
+                                     0x23 : 'byReceived'})
+
+class _SortOrder(_Enumeration):
+    description = 'Converts folder sort order.'
+
+    def __init__(self):
+        _Enumeration.__init__(self, ['none', 'ascending', 'descending'])
+
+class _Priority(_Enumeration):
+    description = 'Converts message priority.'
+
+    def __init__(self):
+        _Enumeration.__init__(self, ['notSet', 'none', 'lowest', 'low',
+                                     'normal', 'high', 'highest'])
+
+class _RemoteContentPolicy(_Enumeration):
+    description = 'Converts message remote content policy.'
+
+    def __init__(self):
+        _Enumeration.__init__(self, ['kNoRemoteContentPolicy',
+                                     'kBlockRemoteContent',
+                                     'kAllowRemoteContent'])
+
 class _BoolInt(_Enumeration):
+    description = 'Converter for boolean values represented as 0 or 1.'
+    generic = True
+
     def __init__(self):
         _Enumeration.__init__(self, [u'false', u'true'])
 
 # This is for fields that signal something by their mere presence. The value
 # doesn't matter.
 class _BoolAnyVal(_FieldConverter):
+    description = ("Converts any value to 'true', for boolean values "
+                   "indicated by their presence or absence.")
+    generic = True
+
     def convert(self, opts, value):
         if opts.no_symbolic:
             return value
@@ -218,6 +397,9 @@ class _Time(_FieldConverter):
         return time.strftime(opts.time_format, t)
 
 class _Seconds(_Time):
+    description = 'Converts seconds since epoch to formatted time.'
+    generic = True
+
     def __init__(self, base=10, divisor=1):
         self._base = base
         self._divisor = divisor
@@ -246,7 +428,27 @@ class _FormattedTime(_Time):
         t = time.strptime(value, self._parse_format)
         return self._format(opts, t)
 
+class _SecondsHex(_Seconds):
+    description = 'Converts hexidecimal seconds since epoch to formatted time.'
+
+    def __init__(self):
+        _Seconds.__init__(self, base=16)
+
+class _Microseconds(_Seconds):
+    description = 'Converts microseconds since epoch to formatted time.'
+
+    def __init__(self):
+        _Seconds.__init__(self, divisor=1000000)
+
+class _LastPurgeTime(_FormattedTime):
+    description = "Converter for LastPurgeTime's formatted date/time."
+
+    def __init__(self):
+        _FormattedTime.__init__(self, '%a %b %d %H:%M:%S %Y')
+
 class _SortColumns(_FieldConverter):
+    description = 'Converter for mail folder sort column.'
+
     # constants from mailnews/base/public/nsIMsgDBView.idl.
     _sort_order = {
         0 : 'none',
@@ -305,28 +507,40 @@ class _SortColumns(_FieldConverter):
 
         return u', '.join(sort_items)
 
-_hex_int_converter = _Int(base=16)
-_signed_int32_converter = _SignedInt32(base=16)
-_msg_flags_converter = _MsgFlags()
-_bool_int_converter = _BoolInt()
-_bool_any_converter = _BoolAnyVal()
-_seconds_converter = _Seconds()
-_hex_seconds_converter = _Seconds(base=16)
-_microseconds_converter = _Seconds(divisor=1000000)
-_purge_time_converter = _FormattedTime('%a %b %d %H:%M:%S %Y')
-# mailnews/base/public/nsMsgFolderFlags.idl
-_msg_folder_flags_converter = _Flags(['Newsgroup', 'NewsHost', 'Mail',
-                                      'Directory', 'Elided', 'Virtual',
-                                      'Subscribed', 'Unused2', 'Trash',
-                                      'SentMail', 'Drafts', 'Queue', 'Inbox',
-                                      'ImapBox', 'Archive', 'ProfileGroup',
-                                      'Unused4', 'GotNew', 'ImapServer',
-                                      'ImapPersonal', 'ImapPublic',
-                                      'ImapOtherUser', 'Templates',
-                                      'PersonalShared', 'ImapNoselect',
-                                      'CreatedOffline', 'ImapNoinferiors',
-                                      'Offline', 'OfflineEvents', 'CheckNew',
-                                      'Junk', 'Favorite'])
+_converters = {
+    # General converters first.
+    'none'               : _NullConverter(),
+    'integer-hex'        : _IntHex(),
+    'integer-hex-signed' : _SignedInt32(),
+    'boolean-integer'    : _BoolInt(),
+    'boolean-any'        : _BoolAnyVal(),
+    'seconds'            : _Seconds(),
+    'seconds-hex'        : _SecondsHex(),
+    'microseconds'       : _Microseconds(),
+
+    # Specific converters second.
+    'hier-delim'            : _HierDelim(),
+    'message-flags'         : _MsgFlags(),
+    'imap-flags'            : _ImapFlags(),
+    'sort-columns'          : _SortColumns(),
+    'last-purge-time'       : _LastPurgeTime(),
+    'message-folder-flags'  : _MsgFolderFlags(),
+    'card-type'             : _CardType(),
+    'prefer-mail-format'    : _PreferMailFormat(),
+    'acl-flags'             : _AclFlags(),
+    'box-flags'             : _BoxFlags(),
+    'current-view'          : _CurrentView(),
+    'retain-by'             : _RetainBy(),
+    'view-type'             : _ViewType(),
+    'view-flags'            : _ViewFlags(),
+    'sort-type'             : _SortType(),
+    'sort-order'            : _SortOrder(),
+    'priority'              : _Priority(),
+    'remote-content-policy' : _RemoteContentPolicy(),
+}
+
+# XXX The source references are kind of screwy now that the code is in the
+# classes, not the dict.
 
 # The big dictionary of field converters.
 #
@@ -335,13 +549,13 @@ _msg_folder_flags_converter = _Flags(['Newsgroup', 'NewsHost', 'Mail',
 # have :scope:folders and Mail Summary Files have several scopes, none of which
 # are 'folders'.
 
-_converters = {
+_conversions = {
     # Address Book Fields (ns:addrbk).
     # Source references are for Thunderbird 3.0.5 unless otherwise
     # indicated.
     'ns:addrbk:db:row:scope:card:all' : {
         # mailnews/addrbook/src/nsAddrDatabase.h AddAllowRemoteContent
-        'AllowRemoteContent' : _bool_int_converter,
+        'AllowRemoteContent' : 'boolean-integer',
         # Based on mailnews/addrbook/src/nsAddrDatabase.h AddCardType from
         # Thunderbird 2.0.0.24, CardType appears to be a string. However,
         # based on calls to GetCardTypeFromString in
@@ -349,20 +563,17 @@ _converters = {
         # constants in mailnews/addrbook/public/nsIAbCard.idl, it appears to be
         # an enumeration with a bizarre string-formatted integer internal
         # representation.
-        'CardType'           : _Enumeration([u'normal', u'AOL groups',
-                                             u'AOL additional email'],
-                                            default=u'normal'),
+        'CardType'           : 'card-type',
         # mailnews/addrbook/src/nsAddrDatabase.cpp AddRowToDeletedCardsTable
-        'LastModifiedDate'   : _hex_seconds_converter,
+        'LastModifiedDate'   : 'seconds-hex',
         # mailnews/addrbook/src/nsAddrDatabase.h AddPopularityIndex
-        'PopularityIndex'    : _hex_int_converter,
+        'PopularityIndex'    : 'integer-hex',
         # mailnews/addrbook/src/nsAbCardProperty.cpp ConvertToEscapedVCard
-        'PreferMailFormat'   : _Enumeration([u'unknown', u'plaintext',
-                                             u'html']),
+        'PreferMailFormat'   : 'prefer-mail-format',
     },
     'ns:addrbk:db:row:scope:list:all' : {
         # mailnews/addrbook/src/nsAddrDatabase.cpp GetListAddressTotal
-        'ListTotalAddresses' : _hex_int_converter,
+        'ListTotalAddresses' : 'integer-hex',
     },
 
     # History Fields (ns:history).
@@ -372,10 +583,10 @@ _converters = {
         # /toolkit/components/history/src/nsGlobalHistory.cpp CreateTokens.
         # AddNewPageToDatabase in the same file is a good reference for these.
 
-        'FirstVisitDate' : _microseconds_converter,
-        'LastVisitDate'  : _microseconds_converter,
-        'Hidden'         : _bool_any_converter,
-        'Typed'          : _bool_any_converter,
+        'FirstVisitDate' : 'microseconds',
+        'LastVisitDate'  : 'microseconds',
+        'Hidden'         : 'boolean-any',
+        'Typed'          : 'boolean-any',
     },
 
     # Folder Cache Fields (ns:msg:db:row:scope:folders:).
@@ -384,48 +595,30 @@ _converters = {
     # ns:msg:db:row:scope:dbfolderinfo from .msf files.
     'ns:msg:db:row:scope:folders:all' : {
         # From mailnews/db/msgdb/src/nsMsgDatabase.cpp
-        'LastPurgeTime'     : _purge_time_converter,
+        'LastPurgeTime'     : 'last-purge-time',
         # Defined in mailnews/base/public/msgCore.h, used
         # in mailnews/base/util/nsMsgDBFolder.cpp
-        'MRUTime'           : _seconds_converter,
+        'MRUTime'           : 'seconds',
         # This shows up in mailnews/imap/src/nsImapMailFolder.cpp.
         # Flag values are defined in mailnews/imap/src/nsImapMailFolder.h.
-        'aclFlags'          : _Flags(['IMAP_ACL_READ_FLAG',
-                                      'IMAP_ACL_STORE_SEEN_FLAG',
-                                      'IMAP_ACL_WRITE_FLAG',
-                                      'IMAP_ACL_INSERT_FLAG',
-                                      'IMAP_ACL_POST_FLAG',
-                                      'IMAP_ACL_CREATE_SUBFOLDER_FLAG',
-                                      'IMAP_ACL_DELETE_FLAG',
-                                      'IMAP_ACL_ADMINISTER_FLAG',
-                                      'IMAP_ACL_RETRIEVED_FLAG',
-                                      'IMAP_ACL_EXPUNGE_FLAG',
-                                      'IMAP_ACL_DELETE_FOLDER']),
+        'aclFlags'          : 'acl-flags',
         # From mailnews/imap/src/nsImapMailFolder.cpp. Flags defined in
         # mailnews/imap/src/nsImapCore.h.
-        'boxFlags'          : _Flags(['kMarked', 'kUnmarked', 'kNoinferiors',
-                                      'kNoselect', 'kImapTrash',
-                                      'kJustExpunged', 'kPersonalMailbox',
-                                      'kPublicMailbox', 'kOtherUsersMailbox',
-                                      'kNameSpace', 'kNewlyCreatedFolder',
-                                      'kImapDrafts', 'kImapSpam', 'kImapSent',
-                                      'kImapInbox', 'kImapAllMail',
-                                      'kImapXListTrash'],
-                                     'kNoFlags'),
+        'boxFlags'          : 'box-flags',
         # From mailnews/imap/src/nsImapMailFolder.cpp, with constants in
         # mailnews/imap/src/nsImapCore.h
-        'hierDelim'         : _HierDelim(),
+        'hierDelim'         : 'hier-delim',
 
         # The remaining items are all from mailnews/base/util/nsMsgDBFolder.cpp
 
         # Flags are found in mailnews/base/public/nsMsgFolderFlags.idl.
-        'flags'             : _msg_folder_flags_converter,
-        'totalMsgs'         : _signed_int32_converter,
-        'totalUnreadMsgs'   : _signed_int32_converter,
-        'pendingUnreadMsgs' : _signed_int32_converter,
-        'pendingMsgs'       : _signed_int32_converter,
-        'expungedBytes'     : _hex_int_converter,
-        'folderSize'        : _hex_int_converter,
+        'flags'             : 'message-folder-flags',
+        'totalMsgs'         : 'integer-hex-signed',
+        'totalUnreadMsgs'   : 'integer-hex-signed',
+        'pendingUnreadMsgs' : 'integer-hex-signed',
+        'pendingMsgs'       : 'integer-hex-signed',
+        'expungedBytes'     : 'integer-hex',
+        'folderSize'        : 'integer-hex',
     },
 
     # Mail Summary File Fields
@@ -435,110 +628,70 @@ _converters = {
         # current-view seems to have duplicate definitions in
         # suite/mailnews/msgViewPickerOverlay.js and
         # mail/base/modules/mailViewManager.js.
-        'current-view'         : _Enumeration([u'kViewItemAll',
-                                               u'kViewItemUnread',
-                                               u'kViewItemTags',
-                                               u'kViewItemNotDeleted',
-                                               None, None, None,
-                                               u'kViewItemVirtual',
-                                               u'kViewItemCustomize',
-                                               u'kViewItemFirstCustom']),
+        'current-view'         : 'current-view',
         # The next several are from mailnews/db/msgdb/src/nsMsgDatabase.cpp
         # GetMsgRetentionSetting.
         # retainBy enum comes from mailnews/db/msgdb/public/nsIMsgDatabase.idl.
-        'retainBy'             : _Enumeration([None, 'nsMsgRetainAll',
-                                               'nsMsgRetainByAge',
-                                               'nsMsgRetainByNumHeaders']),
-        'daysToKeepHdrs'       : _hex_int_converter,
-        'numHdrsToKeep'        : _hex_int_converter,
-        'daysToKeepBodies'     : _hex_int_converter,
-        'keepUnreadOnly'       : _bool_int_converter,
-        'useServerDefaults'    : _bool_int_converter,
-        'cleanupBodies'        : _bool_int_converter,
+        'retainBy'             : 'retain-by',
+        'daysToKeepHdrs'       : 'integer-hex',
+        'numHdrsToKeep'        : 'integer-hex',
+        'daysToKeepBodies'     : 'integer-hex',
+        'keepUnreadOnly'       : 'boolean-integer',
+        'useServerDefaults'    : 'boolean-integer',
+        'cleanupBodies'        : 'boolean-integer',
 
         # The next several are shared with ns:msg:db:row:scope:folders:all
-        'LastPurgeTime'        : _purge_time_converter,
-        'MRUTime'              : _seconds_converter,
-        'expungedBytes'        : _hex_int_converter,
-        'flags'                : _msg_folder_flags_converter,
-        'folderSize'           : _hex_int_converter,
+        'LastPurgeTime'        : 'last-purge-time',
+        'MRUTime'              : 'seconds',
+        'expungedBytes'        : 'integer-hex',
+        'flags'                : 'message-folder-flags',
+        'folderSize'           : 'integer-hex',
 
         # The next several are from mailnews/db/msgdb/src/nsDBFolderInfo.cpp.
-        'numMsgs'              : _hex_int_converter,
-        'numNewMsgs'           : _hex_int_converter,
-        'folderDate'           : _hex_seconds_converter,
-        'charSetOverride'      : _bool_int_converter,
+        'numMsgs'              : 'integer-hex',
+        'numNewMsgs'           : 'integer-hex',
+        'folderDate'           : 'seconds-hex',
+        'charSetOverride'      : 'boolean-integer',
         # Enum and flag values are in mailnews/base/public/nsIMsgDBView.idl
-        'viewType'             : _Enumeration(['eShowAllThreads', None,
-                                               'eShowThreadsWithUnread',
-                                               'eShowWatchedThreadsWithUnread',
-                                               'eShowQuickSearchResults',
-                                               'eShowVirtualFolderResults',
-                                               'eShowSearch']),
-        'viewFlags'            : _Flags(['kThreadedDisplay', None, None,
-                                         'kShowIgnored', 'kUnreadOnly',
-                                         'kExpandAll', 'kGroupBySort'],
-                                        'kNone'),
-        'sortType'             : _Enumeration([{0x11 : 'byNone',
-                                                0x12 : 'byDate',
-                                                0x13 : 'bySubject',
-                                                0x14 : 'byAuthor',
-                                                0x15 : 'byId',
-                                                0x16 : 'byThread',
-                                                0x17 : 'byPriority',
-                                                0x18 : 'byStatus',
-                                                0x19 : 'bySize',
-                                                0x1a : 'byFlagged',
-                                                0x1b : 'byUnread',
-                                                0x1c : 'byRecipient',
-                                                0x1d : 'byLocation',
-                                                0x1e : 'byTags',
-                                                0x1f : 'byJunkStatus',
-                                                0x20 : 'byAttachments',
-                                                0x21 : 'byAccount',
-                                                0x22 : 'byCustom',
-                                                0x23 : 'byReceived'}]),
-        'sortOrder'            : _Enumeration(['none', 'ascending',
-                                               'descending']),
+        'viewType'             : 'view-type',
+        'viewFlags'            : 'view-flags',
+        'sortType'             : 'sort-type',
+        'sortOrder'            : 'sort-order',
 
         # From mailnews/db/msgdb/src/nsMsgDatabase.cpp.
-        'fixedBadRefThreading' : _bool_int_converter,
+        'fixedBadRefThreading' : 'boolean-integer',
 
         # From mailnews/imap/src/nsImapMailFolder.cpp.
         # Flags are in mailnews/imap/src/nsImapCore.h.
-        'imapFlags'            : _ImapFlags(),
+        'imapFlags'            : 'imap-flags',
         # From mailnews/base/src/nsMsgDBView.cpp, using consants from
         # mailnews/base/public/nsIMsgDBView.idl. DecodeColumnSort describes how
         # to handle this.
-        'sortColumns'          : _SortColumns(),
+        'sortColumns'          : 'sort-columns',
     },
     'ns:msg:db:row:scope:msgs:all' : {
         # mailnews/imap/src/nsImapMailFolder.cpp
-        'ProtoThreadFlags'    : _msg_flags_converter,
+        'ProtoThreadFlags'    : 'message-flags',
 
         # The next several are defined in
         # mailnews/db/msgdb/src/nsMsgDatabase.cpp and are actually used in
         # mailnews/db/msgdb/src/nsMsgHdr.cpp.
-        'date'                : _hex_seconds_converter,
-        'size'                : _hex_int_converter,
-        'flags'               : _msg_flags_converter,
-        'priority'            : _Enumeration(['notSet', 'none', 'lowest',
-                                              'low', 'normal', 'high',
-                                              'highest']),
-        'label'               : _hex_int_converter,
-        'statusOfset'         : _hex_int_converter,
-        'numLines'            : _hex_int_converter,
-        'msgOffset'           : _hex_int_converter,
-        'offlineMsgSize'      : _hex_int_converter,
+        'date'                : 'seconds-hex',
+        'size'                : 'integer-hex',
+        'flags'               : 'message-flags',
+        'priority'            : 'priority',
+        'label'               : 'integer-hex',
+        'statusOfset'         : 'integer-hex',
+        'numLines'            : 'integer-hex',
+        'msgOffset'           : 'integer-hex',
+        'offlineMsgSize'      : 'integer-hex',
         # Same files, but Thunderbird 2.0.0.24.
-        'numRefs'             : _hex_int_converter,
+        'numRefs'             : 'integer-hex',
 
         # From mailnews/local/src/nsParseMailbox.cpp
-        'dateReceived'        : _hex_seconds_converter,
+        'dateReceived'        : 'seconds-hex',
         # From mailnews/base/src/nsMsgContentPolicy.cpp
-        'remoteContentPolicy' : _Enumeration(['kNoRemoteContentPolicy',
-                                              'kBlockRemoteContent',
-                                              'kAllowRemoteContent']),
+        'remoteContentPolicy' : 'remote-content-policy',
     },
 
     # Mail Summary File meta-rows.
@@ -546,10 +699,10 @@ _converters = {
         # These are all declared in mailnews/db/msgdb/src/nsMsgDatabase.cpp
         # and read in in mailnews/db/msgdb/src/nsMsgThread.cpp
         # InitCachedValues.
-        'children'            : _hex_int_converter,
-        'unreadChildren'      : _hex_int_converter,
-        'threadFlags'         : _msg_flags_converter,
-        'threadNewestMsgDate' : _hex_seconds_converter,
+        'children'            : 'integer-hex',
+        'unreadChildren'      : 'integer-hex',
+        'threadFlags'         : 'message-flags',
+        'threadNewestMsgDate' : 'seconds-hex',
     },
 }
 
@@ -584,12 +737,13 @@ class FieldConverter(Filter):
             return
 
         for (row_namespace, row_id, row) in db.rows.items():
-            row_converters = _converters.get(row_namespace)
-            if row_converters is None:
+            row_conversions = _conversions.get(row_namespace)
+            if row_conversions is None:
                 continue
 
             for (col, value) in row.items():
-                converter = row_converters.get(col)
+                conversion = row_conversions.get(col)
+                converter = _converters.get(conversion)
                 if converter:
                     row[col] = converter.convert(opts, value)
 
