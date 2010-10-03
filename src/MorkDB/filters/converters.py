@@ -70,6 +70,8 @@ class SignedInt32(Int):
 
         return unicode(ival)
 
+# From TB3.0.5:mailnews/imap/src/nsImapMailFolder.cpp, with constants in
+# mailnews/imap/src/nsImapCore.h
 class HierDelim(Int):
     description = "Converter for the 'hierDelim' column from folder cache "\
                   "files (panacea.dat)."
@@ -120,7 +122,7 @@ class Flags(Int):
 
         return result
 
-# mailnews/base/public/nsMsgMessageFlags.idl nsMsgMessageFlags
+# TB3.0.5:mailnews/base/public/nsMsgMessageFlags.idl nsMsgMessageFlags
 # Message "flags" include some non-flag parts.
 class MsgFlags(Flags):
     description = 'Converter for message and thread flags.'
@@ -131,7 +133,7 @@ class MsgFlags(Flags):
                    'Ignored', None, None, 'IMAPDeleted', 'MDNReportNeeded',
                    'MDNReportSent', 'Template', None, None, None, 'Attachment']
 
-    # mailnews/base/public/MailNewsTypes2.idl
+    # TB3.0.5:mailnews/base/public/MailNewsTypes2.idl
     _priority_labels = ['notSet', 'none', 'lowest', 'low', 'normal', 'high',
                         'highest']
 
@@ -160,6 +162,8 @@ class MsgFlags(Flags):
 
         return u' '.join(flags)
 
+# From TB3.0.5:mailnews/imap/src/nsImapMailFolder.cpp.
+# Flags are in mailnews/imap/src/nsImapCore.h.
 class ImapFlags(Flags):
     description = 'Converter for IMAP folder flags.'
 
@@ -189,10 +193,11 @@ class ImapFlags(Flags):
 
         return u' '.join(flags)
 
+# TB3.0.5:mailnews/base/util/nsMsgDBFolder.cpp with flags defined in
+# mailnews/base/public/nsMsgFolderFlags.idl
 class MsgFolderFlags(Flags):
     description = 'Converts message folder flags.'
 
-    # mailnews/base/public/nsMsgFolderFlags.idl
     flag_values = ['Newsgroup', 'NewsHost', 'Mail', 'Directory', 'Elided',
                    'Virtual', 'Subscribed', 'Unused2', 'Trash', 'SentMail',
                    'Drafts', 'Queue', 'Inbox', 'ImapBox', 'Archive',
@@ -202,6 +207,8 @@ class MsgFolderFlags(Flags):
                    'ImapNoinferiors', 'Offline', 'OfflineEvents', 'CheckNew',
                    'Junk', 'Favorite']
 
+# This shows up in TB3.0.5:mailnews/imap/src/nsImapMailFolder.cpp.
+# Flag values are defined in mailnews/imap/src/nsImapMailFolder.h.
 class AclFlags(Flags):
     description = 'Decodes IMAP Access Control List flags.'
 
@@ -212,6 +219,8 @@ class AclFlags(Flags):
                    'IMAP_ACL_RETRIEVED_FLAG', 'IMAP_ACL_EXPUNGE_FLAG',
                    'IMAP_ACL_DELETE_FOLDER']
 
+# From TB3.0.5:mailnews/imap/src/nsImapMailFolder.cpp. Flags defined in
+# mailnews/imap/src/nsImapCore.h.
 class BoxFlags(Flags):
     description = 'Decodes flags for IMAP mailboxes.'
 
@@ -223,6 +232,8 @@ class BoxFlags(Flags):
                    'kImapXListTrash']
     empty = u'kNoFlags'
 
+# TB3.0.5:mailnews/db/msgdb/src/nsDBFolderInfo.cpp with flags from
+# mailnews/base/public/nsIMsgDBView.idl.
 class ViewFlags(Flags):
     description = 'Converts flags for folder views.'
 
@@ -259,32 +270,48 @@ class Enumeration(Int):
         else:
             return result
 
+# Based on TB2.0.0.24:mailnews/addrbook/src/nsAddrDatabase.h AddCardType,
+# CardType appears to be a string. However, based on calls to
+# GetCardTypeFromString in mailnews/addrbook/src/nsAbCardProperty.cpp, and the
+# definition of constants in mailnews/addrbook/public/nsIAbCard.idl, it appears
+# to be an enumeration with a bizarre string-formatted integer internal
+# representation.
 class CardType(Enumeration):
     description = 'Converter for address book entry type.'
     values = [u'normal', u'AOL groups', u'AOL additional email']
     default = u'normal'
 
+# current-view seems to have duplicate definitions in
+# TB3.0.5:suite/mailnews/msgViewPickerOverlay.js and
+# mail/base/modules/mailViewManager.js.
 class CurrentView(Enumeration):
     description = 'Converts current folder view.'
     values = [u'kViewItemAll', u'kViewItemUnread', u'kViewItemTags',
               u'kViewItemNotDeleted', None, None, None, u'kViewItemVirtual',
               u'kViewItemCustomize', u'kViewItemFirstCustom']
 
+# TB3.0.5:mailnews/addrbook/src/nsAbCardProperty.cpp ConvertToEscapedVCard
 class PreferMailFormat(Enumeration):
     description = 'Converts preferred mail format.'
     values = [u'unknown', u'plaintext', u'html']
 
+# TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp GetMsgRetentionSetting
+# with values from mailnews/db/msgdb/public/nsIMsgDatabase.idl.
 class RetainBy(Enumeration):
     description = 'Converts mail retention policy.'
     values = [None, 'nsMsgRetainAll', 'nsMsgRetainByAge',
               'nsMsgRetainByNumHeaders']
 
+# TB3.0.5:mailnews/db/msgdb/src/nsDBFolderInfo.cpp with values from
+# mailnews/base/public/nsIMsgDBView.idl.
 class ViewType(Enumeration):
     description = 'Converts type of folder view.'
     values = ['eShowAllThreads', None, 'eShowThreadsWithUnread',
               'eShowWatchedThreadsWithUnread', 'eShowQuickSearchResults',
               'eShowVirtualFolderResults', 'eShowSearch']
 
+# TB3.0.5:mailnews/db/msgdb/src/nsDBFolderInfo.cpp with values from
+# mailnews/base/public/nsIMsgDBView.idl.
 class SortType(Enumeration):
     description = 'Converts folder sort type.'
     values = {0x11 : u'byNone', 0x12 : u'byDate', 0x13 : u'bySubject',
@@ -295,14 +322,19 @@ class SortType(Enumeration):
               0x20 : u'byAttachments', 0x21 : u'byAccount', 0x22 : u'byCustom',
               0x23 : u'byReceived'}
 
+# TB3.0.5:mailnews/db/msgdb/src/nsDBFolderInfo.cpp with values from
+# mailnews/base/public/nsIMsgDBView.idl.
 class SortOrder(Enumeration):
     description = 'Converts folder sort order.'
     values = ['none', 'ascending', 'descending']
 
+# Defined in TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp and used in
+# mailnews/db/msgdb/src/nsMsgHdr.cpp.
 class Priority(Enumeration):
     description = 'Converts message priority.'
     values = ['notSet', 'none', 'lowest', 'low', 'normal', 'high', 'highest']
 
+# From TB3.0.5:mailnews/base/src/nsMsgContentPolicy.cpp.
 class RemoteContentPolicy(Enumeration):
     description = 'Converts message remote content policy.'
     values = ['kNoRemoteContentPolicy', 'kBlockRemoteContent',
@@ -367,14 +399,17 @@ class Microseconds(Seconds):
     description = 'Converts microseconds since epoch to formatted time.'
     divisor = 1000000
 
+# TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp.
 class LastPurgeTime(FormattedTime):
     description = "Converter for LastPurgeTime's formatted date/time."
     parse_format = '%a %b %d %H:%M:%S %Y'
 
+# From TB3.0.5:mailnews/base/src/nsMsgDBView.cpp, using consants from
+# mailnews/base/public/nsIMsgDBView.idl. DecodeColumnSort describes how
+# to handle this.
 class SortColumns(FieldConverter):
     description = 'Converter for mail folder sort column.'
 
-    # constants from mailnews/base/public/nsIMsgDBView.idl.
     _sort_order = {
         0 : 'none',
         1 : 'ascending',

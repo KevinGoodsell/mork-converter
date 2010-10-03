@@ -51,50 +51,42 @@ _converters = {
     'remote-content-policy' : converters.RemoteContentPolicy(),
 }
 
-# XXX The source references are kind of screwy now that the code is in the
-# classes, not the dict.
-
 # The big dictionary of field converters.
 #
 # Note: ns:addrbk, ns:history, ns:formhistory are pretty obvious, but ns:msg
 # is used for both Mail Summary Files and Folder Caches. However, Folder Caches
 # have :scope:folders and Mail Summary Files have several scopes, none of which
 # are 'folders'.
+#
+# Source references are included for some of the simpler converters. The more
+# specific converters include source references in their class definition.
+# References use TB for Thunderbird, FF for Firefox, and a version number in
+# addition to a path in the source tree and sometimes a function name.
 
 _conversions = {
     # Address Book Fields (ns:addrbk).
-    # Source references are for Thunderbird 3.0.5 unless otherwise
-    # indicated.
     'ns:addrbk:db:row:scope:card:all' : {
-        # mailnews/addrbook/src/nsAddrDatabase.h AddAllowRemoteContent
+        # TB3.0.5:mailnews/addrbook/src/nsAddrDatabase.h AddAllowRemoteContent
         'AllowRemoteContent' : 'boolean-integer',
-        # Based on mailnews/addrbook/src/nsAddrDatabase.h AddCardType from
-        # Thunderbird 2.0.0.24, CardType appears to be a string. However,
-        # based on calls to GetCardTypeFromString in
-        # mailnews/addrbook/src/nsAbCardProperty.cpp, and the definition of
-        # constants in mailnews/addrbook/public/nsIAbCard.idl, it appears to be
-        # an enumeration with a bizarre string-formatted integer internal
-        # representation.
         'CardType'           : 'card-type',
-        # mailnews/addrbook/src/nsAddrDatabase.cpp AddRowToDeletedCardsTable
+        # TB3.0.5:mailnews/addrbook/src/nsAddrDatabase.cpp
+        # AddRowToDeletedCardsTable
         'LastModifiedDate'   : 'seconds-hex',
-        # mailnews/addrbook/src/nsAddrDatabase.h AddPopularityIndex
+        # TB3.0.5:mailnews/addrbook/src/nsAddrDatabase.h AddPopularityIndex
         'PopularityIndex'    : 'integer-hex',
-        # mailnews/addrbook/src/nsAbCardProperty.cpp ConvertToEscapedVCard
         'PreferMailFormat'   : 'prefer-mail-format',
     },
     'ns:addrbk:db:row:scope:list:all' : {
-        # mailnews/addrbook/src/nsAddrDatabase.cpp GetListAddressTotal
+        # TB3.0.5:mailnews/addrbook/src/nsAddrDatabase.cpp GetListAddressTotal
         'ListTotalAddresses' : 'integer-hex',
     },
 
     # History Fields (ns:history).
-    # Source references are from Firefox 2.0.0.20 unless otherwise indicated.
     'ns:history:db:row:scope:history:all' : {
         # Tokens are created in
-        # /toolkit/components/history/src/nsGlobalHistory.cpp CreateTokens.
-        # AddNewPageToDatabase in the same file is a good reference for these.
-
+        # FF2.0.0.20:toolkit/components/history/src/nsGlobalHistory.cpp
+        # CreateTokens. AddNewPageToDatabase in the same file is a good
+        # reference for these.
         'FirstVisitDate' : 'microseconds',
         'LastVisitDate'  : 'microseconds',
         'Hidden'         : 'boolean-any',
@@ -102,28 +94,19 @@ _conversions = {
     },
 
     # Folder Cache Fields (ns:msg:db:row:scope:folders:).
-    # Source references are from Thunderbird 3.0.5 unless otherwise indicated.
     # Folder caches seem to share a lot of attributes with
     # ns:msg:db:row:scope:dbfolderinfo from .msf files.
     'ns:msg:db:row:scope:folders:all' : {
-        # From mailnews/db/msgdb/src/nsMsgDatabase.cpp
         'LastPurgeTime'     : 'last-purge-time',
-        # Defined in mailnews/base/public/msgCore.h, used
+        # Defined in TB:3.0.5:mailnews/base/public/msgCore.h, used
         # in mailnews/base/util/nsMsgDBFolder.cpp
         'MRUTime'           : 'seconds',
-        # This shows up in mailnews/imap/src/nsImapMailFolder.cpp.
-        # Flag values are defined in mailnews/imap/src/nsImapMailFolder.h.
         'aclFlags'          : 'acl-flags',
-        # From mailnews/imap/src/nsImapMailFolder.cpp. Flags defined in
-        # mailnews/imap/src/nsImapCore.h.
         'boxFlags'          : 'box-flags',
-        # From mailnews/imap/src/nsImapMailFolder.cpp, with constants in
-        # mailnews/imap/src/nsImapCore.h
         'hierDelim'         : 'hier-delim',
 
-        # The remaining items are all from mailnews/base/util/nsMsgDBFolder.cpp
-
-        # Flags are found in mailnews/base/public/nsMsgFolderFlags.idl.
+        # The remaining items are all from
+        # TB3.0.5:mailnews/base/util/nsMsgDBFolder.cpp
         'flags'             : 'message-folder-flags',
         'totalMsgs'         : 'integer-hex-signed',
         'totalUnreadMsgs'   : 'integer-hex-signed',
@@ -135,15 +118,11 @@ _conversions = {
 
     # Mail Summary File Fields
     # (ns:msg:db:row:scope:{dbfolderinfo,msgs,threads})
-    # Source references are for Thunderbird 3.0.5 unless otherwise indicated.
     'ns:msg:db:row:scope:dbfolderinfo:all' : {
-        # current-view seems to have duplicate definitions in
-        # suite/mailnews/msgViewPickerOverlay.js and
-        # mail/base/modules/mailViewManager.js.
         'current-view'         : 'current-view',
-        # The next several are from mailnews/db/msgdb/src/nsMsgDatabase.cpp
+        # The next several are from
+        # TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp
         # GetMsgRetentionSetting.
-        # retainBy enum comes from mailnews/db/msgdb/public/nsIMsgDatabase.idl.
         'retainBy'             : 'retain-by',
         'daysToKeepHdrs'       : 'integer-hex',
         'numHdrsToKeep'        : 'integer-hex',
@@ -159,35 +138,28 @@ _conversions = {
         'flags'                : 'message-folder-flags',
         'folderSize'           : 'integer-hex',
 
-        # The next several are from mailnews/db/msgdb/src/nsDBFolderInfo.cpp.
+        # The next several are from
+        # TB3.0.5:mailnews/db/msgdb/src/nsDBFolderInfo.cpp.
         'numMsgs'              : 'integer-hex',
         'numNewMsgs'           : 'integer-hex',
         'folderDate'           : 'seconds-hex',
         'charSetOverride'      : 'boolean-integer',
-        # Enum and flag values are in mailnews/base/public/nsIMsgDBView.idl
         'viewType'             : 'view-type',
         'viewFlags'            : 'view-flags',
         'sortType'             : 'sort-type',
         'sortOrder'            : 'sort-order',
 
-        # From mailnews/db/msgdb/src/nsMsgDatabase.cpp.
+        # From TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp.
         'fixedBadRefThreading' : 'boolean-integer',
-
-        # From mailnews/imap/src/nsImapMailFolder.cpp.
-        # Flags are in mailnews/imap/src/nsImapCore.h.
         'imapFlags'            : 'imap-flags',
-        # From mailnews/base/src/nsMsgDBView.cpp, using consants from
-        # mailnews/base/public/nsIMsgDBView.idl. DecodeColumnSort describes how
-        # to handle this.
         'sortColumns'          : 'sort-columns',
     },
     'ns:msg:db:row:scope:msgs:all' : {
-        # mailnews/imap/src/nsImapMailFolder.cpp
         'ProtoThreadFlags'    : 'message-flags',
 
         # The next several are defined in
-        # mailnews/db/msgdb/src/nsMsgDatabase.cpp and are actually used in
-        # mailnews/db/msgdb/src/nsMsgHdr.cpp.
+        # TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp and are actually
+        # used in mailnews/db/msgdb/src/nsMsgHdr.cpp.
         'date'                : 'seconds-hex',
         'size'                : 'integer-hex',
         'flags'               : 'message-flags',
@@ -199,18 +171,16 @@ _conversions = {
         'offlineMsgSize'      : 'integer-hex',
         # Same files, but Thunderbird 2.0.0.24.
         'numRefs'             : 'integer-hex',
-
-        # From mailnews/local/src/nsParseMailbox.cpp
+        # From TB3.0.5:mailnews/local/src/nsParseMailbox.cpp.
         'dateReceived'        : 'seconds-hex',
-        # From mailnews/base/src/nsMsgContentPolicy.cpp
         'remoteContentPolicy' : 'remote-content-policy',
     },
 
     # Mail Summary File meta-rows.
     'm' : {
-        # These are all declared in mailnews/db/msgdb/src/nsMsgDatabase.cpp
-        # and read in in mailnews/db/msgdb/src/nsMsgThread.cpp
-        # InitCachedValues.
+        # These are all declared in
+        # TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp and read in in
+        # mailnews/db/msgdb/src/nsMsgThread.cpp InitCachedValues.
         'children'            : 'integer-hex',
         'unreadChildren'      : 'integer-hex',
         'threadFlags'         : 'message-flags',
