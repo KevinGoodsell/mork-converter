@@ -232,8 +232,7 @@ class BoxFlags(Flags):
                    'kImapXListTrash']
     empty = u'kNoFlags'
 
-# TB3.0.5:mailnews/db/msgdb/src/nsDBFolderInfo.cpp with flags from
-# mailnews/base/public/nsIMsgDBView.idl.
+# Flag from TB3.0.5:mailnews/base/public/nsIMsgDBView.idl.
 class ViewFlags(Flags):
     description = 'Converts flags for folder views.'
 
@@ -291,12 +290,14 @@ class CurrentView(Enumeration):
               u'kViewItemCustomize', u'kViewItemFirstCustom']
 
 # TB3.0.5:mailnews/addrbook/src/nsAbCardProperty.cpp ConvertToEscapedVCard
+# with constants in mailnews/addrbook/public/nsIAbCard.idl
 class PreferMailFormat(Enumeration):
     description = 'Converts preferred mail format.'
     values = [u'unknown', u'plaintext', u'html']
 
-# TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp GetMsgRetentionSetting
-# with values from mailnews/db/msgdb/public/nsIMsgDatabase.idl.
+# TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp GetMsgRetentionSetting and
+# ApplyRetentionSettings with values from
+# mailnews/db/msgdb/public/nsIMsgDatabase.idl.
 class RetainBy(Enumeration):
     description = 'Converts mail retention policy.'
     values = [None, 'nsMsgRetainAll', 'nsMsgRetainByAge',
@@ -328,8 +329,8 @@ class SortOrder(Enumeration):
     description = 'Converts folder sort order.'
     values = ['none', 'ascending', 'descending']
 
-# Defined in TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp and used in
-# mailnews/db/msgdb/src/nsMsgHdr.cpp.
+# Used in TB3.0.5:mailnews/db/msgdb/src/nsMsgHdr.cpp with constants from
+# mailnews/base/public/MailNewsTypes2.idl.
 class Priority(Enumeration):
     description = 'Converts message priority.'
     values = ['notSet', 'none', 'lowest', 'low', 'normal', 'high', 'highest']
@@ -392,7 +393,7 @@ class FormattedTime(Time):
         return self._format(opts, t)
 
 class SecondsHex(Seconds):
-    description = 'Converts hexidecimal seconds since epoch to formatted time.'
+    description = 'Converts hexadecimal seconds since epoch to formatted time.'
     base = 16
 
 class Microseconds(Seconds):
@@ -404,7 +405,7 @@ class LastPurgeTime(FormattedTime):
     description = "Converter for LastPurgeTime's formatted date/time."
     parse_format = '%a %b %d %H:%M:%S %Y'
 
-# From TB3.0.5:mailnews/base/src/nsMsgDBView.cpp, using consants from
+# From TB3.0.5:mailnews/base/src/nsMsgDBView.cpp, using constants from
 # mailnews/base/public/nsIMsgDBView.idl. DecodeColumnSort describes how
 # to handle this.
 class SortColumns(FieldConverter):
