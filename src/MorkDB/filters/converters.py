@@ -83,17 +83,17 @@ class HierDelim(Int):
 
         ival = self._to_int(value)
         cval = unichr(ival)
-        if cval == u'^':
-            return u'kOnlineHierarchySeparatorUnknown'
-        elif cval == u'|':
-            return u'kOnlineHierarchySeparatorNil'
+        if cval == '^':
+            return 'kOnlineHierarchySeparatorUnknown'
+        elif cval == '|':
+            return 'kOnlineHierarchySeparatorNil'
         else:
             return cval
 
 class Flags(Int):
     base = 16
     flag_values = None
-    empty = u''
+    empty = ''
 
     def convert(self, opts, value):
         if opts.no_symbolic:
@@ -102,7 +102,7 @@ class Flags(Int):
         ival = self._to_int(value)
         flags = self._get_flags(opts, ival)
         if flags:
-            return u' '.join(flags)
+            return ' '.join(flags)
         else:
             return self.empty
 
@@ -160,7 +160,7 @@ class MsgFlags(Flags):
         if labels:
             flags.append('Labels:0x%X' % labels)
 
-        return u' '.join(flags)
+        return ' '.join(flags)
 
 # From TB3.0.5:mailnews/imap/src/nsImapMailFolder.cpp.
 # Flags are in mailnews/imap/src/nsImapCore.h.
@@ -174,7 +174,7 @@ class ImapFlags(Flags):
                    'kImapMsgCustomKeywordFlag', None, None, None, None,
                    'kImapMsgSupportMDNSentFlag',
                    'kImapMsgSupportForwardedFlag', 'kImapMsgSupportUserFlag']
-    empty = u'kNoImapMsgFlag'
+    empty = 'kNoImapMsgFlag'
 
     def convert(self, opts, value):
         if opts.no_symbolic:
@@ -191,7 +191,7 @@ class ImapFlags(Flags):
         if labels:
             flags.append('Labels:0x%X' % labels)
 
-        return u' '.join(flags)
+        return ' '.join(flags)
 
 # TB3.0.5:mailnews/base/util/nsMsgDBFolder.cpp with flags defined in
 # mailnews/base/public/nsMsgFolderFlags.idl
@@ -230,7 +230,7 @@ class BoxFlags(Flags):
                    'kNewlyCreatedFolder', 'kImapDrafts', 'kImapSpam',
                    'kImapSent', 'kImapInbox', 'kImapAllMail',
                    'kImapXListTrash']
-    empty = u'kNoFlags'
+    empty = 'kNoFlags'
 
 # Flag from TB3.0.5:mailnews/base/public/nsIMsgDBView.idl.
 class ViewFlags(Flags):
@@ -238,7 +238,7 @@ class ViewFlags(Flags):
 
     flag_values = ['kThreadedDisplay', None, None, 'kShowIgnored',
                    'kUnreadOnly', 'kExpandAll', 'kGroupBySort']
-    empty = u'kNone'
+    empty = 'kNone'
 
 class Enumeration(Int):
     base = 16
@@ -277,23 +277,23 @@ class Enumeration(Int):
 # representation.
 class CardType(Enumeration):
     description = 'Converter for address book entry type.'
-    values = [u'normal', u'AOL groups', u'AOL additional email']
-    default = u'normal'
+    values = ['normal', 'AOL groups', 'AOL additional email']
+    default = 'normal'
 
 # current-view seems to have duplicate definitions in
 # TB3.0.5:suite/mailnews/msgViewPickerOverlay.js and
 # mail/base/modules/mailViewManager.js.
 class CurrentView(Enumeration):
     description = 'Converts current folder view.'
-    values = [u'kViewItemAll', u'kViewItemUnread', u'kViewItemTags',
-              u'kViewItemNotDeleted', None, None, None, u'kViewItemVirtual',
-              u'kViewItemCustomize', u'kViewItemFirstCustom']
+    values = ['kViewItemAll', 'kViewItemUnread', 'kViewItemTags',
+              'kViewItemNotDeleted', None, None, None, 'kViewItemVirtual',
+              'kViewItemCustomize', 'kViewItemFirstCustom']
 
 # TB3.0.5:mailnews/addrbook/src/nsAbCardProperty.cpp ConvertToEscapedVCard
 # with constants in mailnews/addrbook/public/nsIAbCard.idl
 class PreferMailFormat(Enumeration):
     description = 'Converts preferred mail format.'
-    values = [u'unknown', u'plaintext', u'html']
+    values = ['unknown', 'plaintext', 'html']
 
 # TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp GetMsgRetentionSetting and
 # ApplyRetentionSettings with values from
@@ -315,13 +315,13 @@ class ViewType(Enumeration):
 # mailnews/base/public/nsIMsgDBView.idl.
 class SortType(Enumeration):
     description = 'Converts folder sort type.'
-    values = {0x11 : u'byNone', 0x12 : u'byDate', 0x13 : u'bySubject',
-              0x14 : u'byAuthor', 0x15 : u'byId', 0x16 : u'byThread',
-              0x17 : u'byPriority', 0x18 : u'byStatus', 0x19 : u'bySize',
-              0x1a : u'byFlagged', 0x1b : u'byUnread', 0x1c : u'byRecipient',
-              0x1d : u'byLocation', 0x1e : u'byTags', 0x1f : u'byJunkStatus',
-              0x20 : u'byAttachments', 0x21 : u'byAccount', 0x22 : u'byCustom',
-              0x23 : u'byReceived'}
+    values = {0x11 : 'byNone', 0x12 : 'byDate', 0x13 : 'bySubject',
+              0x14 : 'byAuthor', 0x15 : 'byId', 0x16 : 'byThread',
+              0x17 : 'byPriority', 0x18 : 'byStatus', 0x19 : 'bySize',
+              0x1a : 'byFlagged', 0x1b : 'byUnread', 0x1c : 'byRecipient',
+              0x1d : 'byLocation', 0x1e : 'byTags', 0x1f : 'byJunkStatus',
+              0x20 : 'byAttachments', 0x21 : 'byAccount', 0x22 : 'byCustom',
+              0x23 : 'byReceived'}
 
 # TB3.0.5:mailnews/db/msgdb/src/nsDBFolderInfo.cpp with values from
 # mailnews/base/public/nsIMsgDBView.idl.
@@ -344,7 +344,7 @@ class RemoteContentPolicy(Enumeration):
 class BoolInt(Enumeration):
     description = 'Converter for boolean values represented as 0 or 1.'
     generic = True
-    values = [u'false', u'true']
+    values = ['false', 'true']
 
 # This is for fields that signal something by their mere presence. The value
 # doesn't matter.
@@ -357,7 +357,7 @@ class BoolAnyVal(FieldConverter):
         if opts.no_symbolic:
             return value
 
-        return u'true'
+        return 'true'
 
 class Time(FieldConverter):
     def _format(self, opts, t):
@@ -456,7 +456,7 @@ class SortColumns(FieldConverter):
                 assert sort_type is not None, 'invalid sort type'
                 assert sort_order is not None, 'invalid sort order'
 
-                sort_item = u'type:%s order:%s' % (sort_type, sort_order)
+                sort_item = 'type:%s order:%s' % (sort_type, sort_order)
 
                 if sort_type == 'byCustom':
                     # The rest is the custom column name (or something like
@@ -466,4 +466,4 @@ class SortColumns(FieldConverter):
 
                 sort_items.append(sort_item)
 
-        return u', '.join(sort_items)
+        return ', '.join(sort_items)
