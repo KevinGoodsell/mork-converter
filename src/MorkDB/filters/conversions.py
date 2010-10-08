@@ -218,6 +218,8 @@ class FieldConverter(Filter):
         if opts.no_convert:
             return
 
+        field = converters.FieldInfo(opts, db)
+
         for (row_namespace, row_id, row) in db.rows.items():
             row_conversions = _conversions.get(row_namespace)
             if row_conversions is None:
@@ -227,6 +229,7 @@ class FieldConverter(Filter):
                 conversion = row_conversions.get(col)
                 converter = _converters.get(conversion)
                 if converter:
-                    row[col] = converter.convert(opts, value)
+                    field.set_value(row_namespace, col, value)
+                    row[col] = converter.convert(field)
 
 convert_fields = FieldConverter(4200)

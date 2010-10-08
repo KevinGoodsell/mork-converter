@@ -17,6 +17,23 @@
 import warnings
 import time
 
+class FieldInfo(object):
+    '''Holds all the information a converter might need.'''
+
+    def __init__(self, opts, db):
+        self.opts = opts
+        self.db = db
+
+        # items to be set in set_value
+        self.row_ns = None
+        self.column = None
+        self.value = None
+
+    def set_value(self, row_ns, column, value):
+        self.row_ns = row_ns
+        self.column = column
+        self.value = value
+
 # Converters for different field types:
 
 class FieldConverter(object):
@@ -26,24 +43,24 @@ class FieldConverter(object):
     # generic or not generic, respectively.
     generic = False
 
-    def convert(self, opts, value):
+    def convert(self, field):
         raise NotImplementedError();
 
 class NullConverter(FieldConverter):
     description = 'No-op converter. Leaves the value unchanged.'
     generic = True
 
-    def convert(self, opts, value):
-        return value
+    def convert(self, field):
+        return field.value
 
 class Int(FieldConverter):
     base = 10
 
-    def convert(self, opts, value):
-        if opts.no_base:
-            return value
+    def convert(self, field):
+        if field.opts.no_base:
+            return field.value
 
-        return unicode(self._to_int(value))
+        return unicode(self._to_int(field.value))
 
     def _to_int(self, value):
         return int(value, self.base)
@@ -59,11 +76,11 @@ class SignedInt32(Int):
     generic = True
     base = 16
 
-    def convert(self, opts, value):
-        if opts.no_base:
-            return value
+    def convert(self, field):
+        if field.opts.no_base:
+            return field.value
 
-        ival = self._to_int(value)
+        ival = self._to_int(field.value)
         assert ival <= 0xffffffff, 'integer too large for 32 bits'
         if ival > 0x7fffffff:
             ival -= 0x100000000
@@ -77,11 +94,11 @@ class HierDelim(Int):
                   "files (panacea.dat)."
     base = 16
 
-    def convert(self, opts, value):
-        if opts.no_symbolic:
-            return value
+    def convert(self, field):
+        if field.opts.no_symbolic:
+            return field.value
 
-        ival = self._to_int(value)
+        ival = self._to_int(field.value)
         cval = unichr(ival)
         if cval == '^':
             return 'kOnlineHierarchySeparatorUnknown'
@@ -95,12 +112,12 @@ class Flags(Int):
     flag_values = None
     empty = ''
 
-    def convert(self, opts, value):
-        if opts.no_symbolic:
-            return value
+    def convert(self, field):
+        if field.opts.no_symbolic:
+            return field.value
 
-        ival = self._to_int(value)
-        flags = self._get_flags(opts, ival)
+        ival = self._to_int(field.value)
+        flags = self._get_flags(field.opts, ival)
         if flags:
             return ' '.join(flags)
         else:
@@ -137,11 +154,11 @@ class MsgFlags(Flags):
     _priority_labels = ['notSet', 'none', 'lowest', 'low', 'normal', 'high',
                         'highest']
 
-    def convert(self, opts, value):
-        if opts.no_symbolic:
-            return value
+    def convert(self, field):
+        if field.opts.no_symbolic:
+            return field.value
 
-        ival = self._to_int(value)
+        ival = self._to_int(field.value)
         # Deal with non-flags:
         # Priorities = 0xE000
         priorities = ival & 0xE000
@@ -153,7 +170,7 @@ class MsgFlags(Flags):
         ival -= labels
         labels >>= 25
 
-        flags = self._get_flags(opts, ival)
+        flags = self._get_flags(field.opts, ival)
 
         if priorities:
             flags.append('Priorities:%s' % self._priority_labels[priorities])
@@ -176,17 +193,17 @@ class ImapFlags(Flags):
                    'kImapMsgSupportForwardedFlag', 'kImapMsgSupportUserFlag']
     empty = 'kNoImapMsgFlag'
 
-    def convert(self, opts, value):
-        if opts.no_symbolic:
-            return value
+    def convert(self, field):
+        if field.opts.no_symbolic:
+            return field.value
 
-        ival = self._to_int(value)
+        ival = self._to_int(field.value)
         # Handle labels
         labels = ival & 0xE00
         ival -= labels
         labels >>= 9
 
-        flags = self._get_flags(opts, ival)
+        flags = self._get_flags(field.opts, ival)
 
         if labels:
             flags.append('Labels:0x%X' % labels)
@@ -253,19 +270,19 @@ class Enumeration(Int):
         else:
             self._map = dict(enumerate(self.values))
 
-    def convert(self, opts, value):
-        if opts.no_symbolic:
-            return value
+    def convert(self, field):
+        if field.opts.no_symbolic:
+            return field.value
 
-        if value == '':
+        if field.value == '':
             result = self.default
         else:
-            ival = self._to_int(value)
+            ival = self._to_int(field.value)
             result = self._map.get(ival, self.default)
 
         if result is None:
             # No conversion
-            return value
+            return field.value
         else:
             return result
 
@@ -353,9 +370,9 @@ class BoolAnyVal(FieldConverter):
                   "indicated by their presence or absence."
     generic = True
 
-    def convert(self, opts, value):
-        if opts.no_symbolic:
-            return value
+    def convert(self, field):
+        if field.opts.no_symbolic:
+            return field.value
 
         return 'true'
 
@@ -369,28 +386,28 @@ class Seconds(Time):
     base = 10
     divisor = 1
 
-    def convert(self, opts, value):
-        if opts.no_time:
-            return value
+    def convert(self, field):
+        if field.opts.no_time:
+            return field.value
 
         # 0 is a common value, and obviously doesn't represent a valid time.
-        if value == '0':
-            return value
+        if field.value == '0':
+            return field.value
 
-        seconds = int(value, self.base) / self.divisor
+        seconds = int(field.value, self.base) / self.divisor
         t = time.localtime(seconds)
 
-        return self._format(opts, t)
+        return self._format(field.opts, t)
 
 class FormattedTime(Time):
     parse_format = None
 
-    def convert(self, opts, value):
-        if opts.no_time:
-            return value
+    def convert(self, field):
+        if field.opts.no_time:
+            return field.value
 
-        t = time.strptime(value, self.parse_format)
-        return self._format(opts, t)
+        t = time.strptime(field.value, self.parse_format)
+        return self._format(field.opts, t)
 
 class SecondsHex(Seconds):
     description = 'Converts hexadecimal seconds since epoch to formatted time.'
@@ -439,13 +456,13 @@ class SortColumns(FieldConverter):
         0x23 : 'byReceived',
     }
 
-    def convert(self, opts, value):
-        if opts.no_symbolic:
-            return value
+    def convert(self, field):
+        if field.opts.no_symbolic:
+            return field.value
 
         sort_items = []
 
-        for piece in value.split('\r'):
+        for piece in field.value.split('\r'):
             it = iter(piece)
             for isort_type in it:
                 isort_order = ord(next(it)) - ord('0')
