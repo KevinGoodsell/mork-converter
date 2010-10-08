@@ -117,13 +117,13 @@ class Flags(Int):
             return field.value
 
         ival = self._to_int(field.value)
-        flags = self._get_flags(field.opts, ival)
+        flags = self._get_flags(ival)
         if flags:
             return ' '.join(flags)
         else:
             return self.empty
 
-    def _get_flags(self, opts, ival):
+    def _get_flags(self, ival):
         result = []
         for (i, flag) in enumerate(self.flag_values):
             if not flag:
@@ -170,7 +170,7 @@ class MsgFlags(Flags):
         ival -= labels
         labels >>= 25
 
-        flags = self._get_flags(field.opts, ival)
+        flags = self._get_flags(ival)
 
         if priorities:
             flags.append('Priorities:%s' % self._priority_labels[priorities])
@@ -203,7 +203,7 @@ class ImapFlags(Flags):
         ival -= labels
         labels >>= 9
 
-        flags = self._get_flags(field.opts, ival)
+        flags = self._get_flags(ival)
 
         if labels:
             flags.append('Labels:0x%X' % labels)
