@@ -29,10 +29,24 @@ if sys.version_info < min_python_version:
 
 import optparse
 import re
+import warnings
 
 from MorkDB.filters import enumerate_filters, list_filters
 
 version = '2.1'
+
+# Override warning format, copy-paste from warnings.py with changes.
+def _show_warning(message, category, filename, lineno, file=None, line=None):
+    if file is None:
+        file = sys.stderr
+    try:
+        # Copy-paste from warnings.py:formatwarning
+        s = "%s:%s: %s: %s\n" % (filename, lineno, category.__name__, message)
+        file.write(s)
+    except IOError:
+        pass # the file (probably stderr) is invalid - this warning gets lost.
+
+warnings.showwarning = _show_warning
 
 def print_tokens(f):
     import MorkDB.morklex as morklex
