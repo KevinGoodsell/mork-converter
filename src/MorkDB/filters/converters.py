@@ -16,6 +16,7 @@
 
 import warnings
 import time
+import re
 
 class FieldInfo(object):
     '''Holds all the information a converter might need.'''
@@ -380,6 +381,16 @@ class Time(FieldConverter):
     def _format(self, opts, t):
         return time.strftime(opts.time_format, t)
 
+    def _to_time(self, field):
+        raise NotImplementedError()
+
+    def convert(self, field):
+        if field.opts.no_time:
+            return field.value
+
+        t = self._to_time(field)
+        return self._format(field.opts, t)
+
 class Seconds(Time):
     description = 'Converts seconds since epoch to formatted time.'
     generic = True
@@ -387,27 +398,21 @@ class Seconds(Time):
     divisor = 1
 
     def convert(self, field):
-        if field.opts.no_time:
-            return field.value
-
         # 0 is a common value, and obviously doesn't represent a valid time.
         if field.value == '0':
             return field.value
 
-        seconds = int(field.value, self.base) / self.divisor
-        t = time.localtime(seconds)
+        return Time.convert(self, field)
 
-        return self._format(field.opts, t)
+    def _to_time(self, field):
+        seconds = int(field.value, self.base) / self.divisor
+        return time.localtime(seconds)
 
 class FormattedTime(Time):
     parse_format = None
 
-    def convert(self, field):
-        if field.opts.no_time:
-            return field.value
-
-        t = time.strptime(field.value, self.parse_format)
-        return self._format(field.opts, t)
+    def _to_time(self, field):
+        return time.strptime(field.value, self.parse_format)
 
 class SecondsHex(Seconds):
     description = 'Converts hexadecimal seconds since epoch to formatted time.'
@@ -416,6 +421,47 @@ class SecondsHex(Seconds):
 class Microseconds(Seconds):
     description = 'Converts microseconds since epoch to formatted time.'
     divisor = 1000000
+
+class SecondsGuessBase(Seconds):
+    description = 'Convert number of seconds to formatted time, attempting '\
+                  'to guess the number base.'
+
+    _known_bases = {} # {('row_ns', 'column') : int(base)}
+    _hex_matcher = re.compile(r'[a-f]+', re.IGNORECASE)
+
+    def _to_time(self, field):
+        base = self._known_bases.get((field.row_ns, field.column))
+        if base is None:
+            base = self._search_for_base(field)
+            self._known_bases[(field.row_ns, field.column)] = base
+
+        seconds = int(field.value, base)
+        return time.localtime(seconds)
+
+    def _search_for_base(self, field):
+        for (row_ns, row_id, row) in field.db.rows.items():
+            val = row.get(field.column)
+            if val and self._hex_matcher.search(val):
+                base = 16
+                break
+        else:
+            # XXX Mention option in the warning.
+            warnings.warn('number base is uncertain for row namespace %s, '
+                          'column %s' % (field.row_ns, field.column))
+
+            as_dec = int(field.value)
+            # 80000000_10 = Fri Jul 14 22:13:20 1972
+            # 80000000_16 = Tue Jan 19 03:14:08 2038
+            #   (but likely out of the system's time_t range)
+            # With this the result may be wrong when:
+            # - the value is hex and later than Jan 19 2038
+            # - the value is decimal and earlier than Jul 1972
+            if as_dec >= 80000000:
+                base = 10
+            else:
+                base = 16
+
+        return base
 
 # TB3.0.5:mailnews/db/msgdb/src/nsMsgDatabase.cpp.
 class LastPurgeTime(FormattedTime):

@@ -28,6 +28,7 @@ _converters = {
     'boolean-any'        : converters.BoolAnyVal(),
     'seconds'            : converters.Seconds(),
     'seconds-hex'        : converters.SecondsHex(),
+    'seconds-guess-base' : converters.SecondsGuessBase(),
     'microseconds'       : converters.Microseconds(),
 
     # Specific converters second.
@@ -71,7 +72,7 @@ _conversions = {
         'CardType'           : 'card-type',
         # TB3.0.5:mailnews/addrbook/src/nsAddrDatabase.cpp
         # AddRowToDeletedCardsTable
-        'LastModifiedDate'   : 'seconds-hex',
+        'LastModifiedDate'   : 'seconds-guess-base',
         # TB3.0.5:mailnews/addrbook/src/nsAddrDatabase.h AddPopularityIndex
         'PopularityIndex'    : 'integer-hex',
         'PreferMailFormat'   : 'prefer-mail-format',
