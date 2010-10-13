@@ -30,6 +30,7 @@ if sys.version_info < min_python_version:
 import optparse
 import re
 import warnings
+import os
 
 from MorkDB.filters import enumerate_filters, list_filters
 
@@ -40,8 +41,11 @@ def _show_warning(message, category, filename, lineno, file=None, line=None):
     if file is None:
         file = sys.stderr
     try:
-        # Copy-paste from warnings.py:formatwarning
-        s = "%s:%s: %s: %s\n" % (filename, lineno, category.__name__, message)
+        # Copied from warnings.py:formatwarning and modified.
+        shortened = os.path.relpath(filename)
+        if len(filename) < len(shortened):
+            shortened = filename
+        s = "%s:%s: %s: %s\n" % (shortened, lineno, category.__name__, message)
         file.write(s)
     except IOError:
         pass # the file (probably stderr) is invalid - this warning gets lost.
