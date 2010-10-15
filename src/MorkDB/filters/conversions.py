@@ -15,6 +15,7 @@
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
 import optparse
+import warnings
 
 from filterbase import Filter
 import converters
@@ -231,6 +232,15 @@ class FieldConverter(Filter):
                 converter = _converters.get(conversion)
                 if converter:
                     field.set_value(row_namespace, col, value)
-                    row[col] = converter.convert(field)
+                    try:
+                        row[col] = converter.convert(field)
+                    except converters.ConversionError, e:
+                        warnings.warn(
+                            'unconvertible value, consider using '
+                            '--convert option\n'
+                            ' [value: %r; conversion: %s; message: %r;\n'
+                            '  row namespace: %s; column: %s]' %
+                                (value, conversion, str(e), row_namespace, col)
+                        )
 
 convert_fields = FieldConverter(4200)

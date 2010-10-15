@@ -35,6 +35,9 @@ class FieldInfo(object):
         self.column = column
         self.value = value
 
+class ConversionError(ValueError):
+    pass
+
 # Converters for different field types:
 
 class FieldConverter(object):
@@ -64,7 +67,10 @@ class Int(FieldConverter):
         return unicode(self._to_int(field.value))
 
     def _to_int(self, value):
-        return int(value, self.base)
+        try:
+            return int(value, self.base)
+        except ValueError:
+            raise ConversionError(str(e))
 
 class IntHex(Int):
     description = 'Converts hexadecimal integer values to decimal.'
@@ -82,7 +88,8 @@ class SignedInt32(Int):
             return field.value
 
         ival = self._to_int(field.value)
-        assert ival <= 0xffffffff, 'integer too large for 32 bits'
+        if ival > 0xffffffff:
+            raise ConversionError('integer too large for 32 bits')
         if ival > 0x7fffffff:
             ival -= 0x100000000
 
@@ -100,7 +107,10 @@ class HierDelim(Int):
             return field.value
 
         ival = self._to_int(field.value)
-        cval = unichr(ival)
+        try:
+            cval = chr(ival)
+        except ValueError, e:
+            raise ConversionError(str(e))
         if cval == '^':
             return 'kOnlineHierarchySeparatorUnknown'
         elif cval == '|':
@@ -136,7 +146,9 @@ class Flags(Int):
                 ival -= fval
 
         if ival:
-            warnings.warn('unknown flags: %x' % ival)
+            warnings.warn('unknown flags\n'
+                          ' [value: 0x%x; row namespace: %s; column: %s]' %
+                          (ival, field.row_ns, field.column))
 
         return result
 
@@ -165,7 +177,8 @@ class MsgFlags(Flags):
         priorities = ival & 0xE000
         ival -= priorities
         priorities >>= 13
-        assert priorities < len(self._priority_labels), 'invalid priority'
+        if priorities >= len(self._priority_labels):
+            raise ConversionError('invalid priority (%d)' % priorities)
         # Labels = 0xE000000
         labels = ival & 0xE000000
         ival -= labels
@@ -174,6 +187,8 @@ class MsgFlags(Flags):
         flags = self._get_flags(ival)
 
         if priorities:
+            # Note that there's actually just one priority, but the name
+            # 'Priorities' is used in the flag definitions.
             flags.append('Priorities:%s' % self._priority_labels[priorities])
         if labels:
             flags.append('Labels:0x%X' % labels)
@@ -405,14 +420,24 @@ class Seconds(Time):
         return Time.convert(self, field)
 
     def _to_time(self, field):
-        seconds = int(field.value, self.base) / self.divisor
-        return time.localtime(seconds)
+        try:
+            as_int = int(field.value, self.base)
+            seconds = as_int / self.divisor
+            return time.localtime(seconds)
+        # This should catch errors from int() and localtime()
+        except ValueError, e:
+            raise ConversionError(str(e))
+
 
 class FormattedTime(Time):
+    # Define this in derived classes
     parse_format = None
 
     def _to_time(self, field):
-        return time.strptime(field.value, self.parse_format)
+        try:
+            return time.strptime(field.value, self.parse_format)
+        except ValueError, e:
+            raise ConversionError(str(e))
 
 class SecondsHex(Seconds):
     description = 'Converts hexadecimal seconds since epoch to formatted time.'
@@ -435,8 +460,12 @@ class SecondsGuessBase(Seconds):
             base = self._search_for_base(field)
             self._known_bases[(field.row_ns, field.column)] = base
 
-        seconds = int(field.value, base)
-        return time.localtime(seconds)
+        try:
+            seconds = int(field.value, base)
+            return time.localtime(seconds)
+        # This should catch errors from int() and localtime()
+        except ValueError, e:
+            raise ConversionError(str(e))
 
     def _search_for_base(self, field):
         for (row_ns, row_id, row) in field.db.rows.items():
@@ -445,11 +474,15 @@ class SecondsGuessBase(Seconds):
                 base = 16
                 break
         else:
-            # XXX Mention option in the warning.
-            warnings.warn('number base is uncertain for row namespace %s, '
-                          'column %s' % (field.row_ns, field.column))
+            warnings.warn("uncertain number base; consider using --convert "
+                          "with 'seconds' or 'seconds-hex'\n"
+                          " [value: %r; row namespace: %s; column: %s]" %
+                          (field.value, field.row_ns, field.column))
 
-            as_dec = int(field.value)
+            try:
+                as_dec = int(field.value)
+            except ValueError, e:
+                raise ConversionError(str(e))
             # 80000000_10 = Fri Jul 14 22:13:20 1972
             # 80000000_16 = Tue Jan 19 03:14:08 2038
             #   (but likely out of the system's time_t range)
@@ -475,9 +508,9 @@ class SortColumns(FieldConverter):
     description = 'Converter for mail folder sort column.'
 
     _sort_order = {
-        0 : 'none',
-        1 : 'ascending',
-        2 : 'descending',
+        '0' : 'none',
+        '1' : 'ascending',
+        '2' : 'descending',
     }
 
     _sort_type = {
@@ -508,23 +541,35 @@ class SortColumns(FieldConverter):
 
         sort_items = []
 
+        # Normally, the value should be a sequence of byte-pairs, where the
+        # first is a sort-type value and the second is a sort-order value.
+        # These two values are represented differently, with the sort-type
+        # using the raw byte value and the sort-order being an ASCII digit.
+        #
+        # The more complicated case is when sort-type is byCustom. In this case
+        # the name of the custom column appears as a carriage-return-terminated
+        # string following the sort-order digit.
+
         for piece in field.value.split('\r'):
             it = iter(piece)
             for isort_type in it:
-                isort_order = ord(next(it)) - ord('0')
+                try:
+                    isort_order = next(it)
+                except StopIteration:
+                    raise ConversionError('incorrect field format')
 
                 sort_type = self._sort_type.get(ord(isort_type))
                 sort_order = self._sort_order.get(isort_order)
 
-                assert sort_type is not None, 'invalid sort type'
-                assert sort_order is not None, 'invalid sort order'
+                if sort_type is None or sort_order is None:
+                    raise ConversionError('incorrect field format')
 
                 sort_item = 'type:%s order:%s' % (sort_type, sort_order)
 
                 if sort_type == 'byCustom':
                     # The rest is the custom column name (or something like
                     # that).
-                    custom_col = str(it)
+                    custom_col = ''.join(it)
                     sort_item = '%s custom:%s' % (sort_item, custom_col)
 
                 sort_items.append(sort_item)
