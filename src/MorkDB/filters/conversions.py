@@ -208,7 +208,7 @@ class FieldConverter(Filter):
             help='use FORMAT as the strftime format for times/dates '
                  '(default: %c)')
         group.add_option('--no-base', action='store_true',
-            help="don't convert hexidecimal integers to decimal")
+            help="don't convert hexadecimal integers to decimal")
         group.add_option('--no-symbolic', action='store_true',
             help="don't do symbolic conversions (e.g. flags, booleans, and "
                  "number-to-string conversions)")
