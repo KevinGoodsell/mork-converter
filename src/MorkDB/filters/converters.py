@@ -69,7 +69,7 @@ class Int(FieldConverter):
     def _to_int(self, value):
         try:
             return int(value, self.base)
-        except ValueError:
+        except ValueError, e:
             raise ConversionError(str(e))
 
 class IntHex(Int):
@@ -128,13 +128,13 @@ class Flags(Int):
             return field.value
 
         ival = self._to_int(field.value)
-        flags = self._get_flags(ival)
+        flags = self._get_flags(ival, field)
         if flags:
             return ' '.join(flags)
         else:
             return self.empty
 
-    def _get_flags(self, ival):
+    def _get_flags(self, ival, field):
         result = []
         for (i, flag) in enumerate(self.flag_values):
             if not flag:
@@ -184,7 +184,7 @@ class MsgFlags(Flags):
         ival -= labels
         labels >>= 25
 
-        flags = self._get_flags(ival)
+        flags = self._get_flags(ival, field)
 
         if priorities:
             # Note that there's actually just one priority, but the name
@@ -219,7 +219,7 @@ class ImapFlags(Flags):
         ival -= labels
         labels >>= 9
 
-        flags = self._get_flags(ival)
+        flags = self._get_flags(ival, field)
 
         if labels:
             flags.append('Labels:0x%X' % labels)
@@ -474,15 +474,16 @@ class SecondsGuessBase(Seconds):
                 base = 16
                 break
         else:
+            try:
+                as_dec = int(field.value)
+            except ValueError, e:
+                raise ConversionError(str(e))
+
             warnings.warn("uncertain number base; consider using --convert "
                           "with 'seconds' or 'seconds-hex'\n"
                           " [value: %r; row namespace: %s; column: %s]" %
                           (field.value, field.row_ns, field.column))
 
-            try:
-                as_dec = int(field.value)
-            except ValueError, e:
-                raise ConversionError(str(e))
             # 80000000_10 = Fri Jul 14 22:13:20 1972
             # 80000000_16 = Tue Jan 19 03:14:08 2038
             #   (but likely out of the system's time_t range)
@@ -562,7 +563,7 @@ class SortColumns(FieldConverter):
                 sort_order = self._sort_order.get(isort_order)
 
                 if sort_type is None or sort_order is None:
-                    raise ConversionError('incorrect field format')
+                    raise ConversionError('out of range field value')
 
                 sort_item = 'type:%s order:%s' % (sort_type, sort_order)
 
