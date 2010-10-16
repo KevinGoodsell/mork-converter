@@ -16,6 +16,7 @@
 
 import optparse
 import warnings
+import sys
 
 from filterbase import Filter
 import converters
@@ -190,6 +191,24 @@ _conversions = {
     },
 }
 
+def _print_conversions(option, opt_str, value, parser):
+    if opt_str == '--show-all-conversions':
+        converters = _converters.items()
+    else:
+        # Generic only.
+        converters = [(name, converter)
+                      for (name, converter) in _converters.items()
+                      if converter.generic]
+
+    # Sort generic converters first, then by name.
+    converters.sort(key=lambda item: (not item[1].generic, item[0]))
+
+    name_len = max(len(name) for (name, converter) in converters)
+    for (name, converter) in converters:
+        print '%-*s  %s' % (name_len, name, converter.description)
+
+    sys.exit()
+
 class FieldConverter(Filter):
     '''
     Filter to interpret Mork fields, making them more human-readable.
@@ -212,13 +231,29 @@ class FieldConverter(Filter):
         group.add_option('--no-symbolic', action='store_true',
             help="don't do symbolic conversions (e.g. flags, booleans, and "
                  "number-to-string conversions)")
+        group.add_option('--convert', action='append',
+            metavar='ROW_NAMESPACE COLMUN CONVERSION', nargs=3,
+            help='override default conversion for the given fields')
+        group.add_option('--show-conversions', action='callback',
+            callback=_print_conversions,
+            help='print a list of the conversions available for use with '
+                 '--convert and exit')
+        group.add_option('--show-all-conversions', action='callback',
+            callback=_print_conversions,
+            help="same as --show-conversions, but include non-general "
+                 "conversions that you probably don't want to use")
 
         parser.add_option_group(group)
-        parser.set_defaults(time_format='%c')
+        parser.set_defaults(time_format='%c', convert=[])
 
     def process(self, db, opts):
         if opts.no_convert:
             return
+
+        # make opts.convert a dict.
+        kv = [((row_ns, col), conversion)
+              for (row_ns, col, conversion) in opts.convert]
+        opts.convert = dict(kv)
 
         field = converters.FieldInfo(opts, db)
 
@@ -228,7 +263,11 @@ class FieldConverter(Filter):
                 continue
 
             for (col, value) in row.items():
-                conversion = row_conversions.get(col)
+                # Check user-specified conversions first.
+                conversion = opts.convert.get((row_namespace, col))
+                if conversion is None:
+                    conversion = row_conversions.get(col)
+                # Translate conversion (a string name) to a converter object
                 converter = _converters.get(conversion)
                 if converter:
                     field.set_value(row_namespace, col, value)
