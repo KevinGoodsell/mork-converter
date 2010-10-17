@@ -209,6 +209,12 @@ def _print_conversions(option, opt_str, value, parser):
 
     sys.exit()
 
+def _convert_opt_callback(option, opt_str, value, parser):
+    (row_ns, column, conversion) = value
+    if conversion not in _converters:
+        raise optparse.OptionValueError('unknown conversion: %r' % conversion)
+    parser.values.convert[(row_ns, column)] = conversion
+
 class FieldConverter(Filter):
     '''
     Filter to interpret Mork fields, making them more human-readable.
@@ -231,7 +237,8 @@ class FieldConverter(Filter):
         group.add_option('--no-symbolic', action='store_true',
             help="don't do symbolic conversions (e.g. flags, booleans, and "
                  "number-to-string conversions)")
-        group.add_option('--convert', action='append',
+        group.add_option('--convert', action='callback',
+            callback=_convert_opt_callback, type='str',
             metavar='ROW_NAMESPACE COLMUN CONVERSION', nargs=3,
             help='override default conversion for the given fields')
         group.add_option('--show-conversions', action='callback',
@@ -244,16 +251,11 @@ class FieldConverter(Filter):
                  "conversions that you probably don't want to use")
 
         parser.add_option_group(group)
-        parser.set_defaults(time_format='%c', convert=[])
+        parser.set_defaults(time_format='%c', convert={})
 
     def process(self, db, opts):
         if opts.no_convert:
             return
-
-        # make opts.convert a dict.
-        kv = [((row_ns, col), conversion)
-              for (row_ns, col, conversion) in opts.convert]
-        opts.convert = dict(kv)
 
         field = converters.FieldInfo(opts, db)
 
