@@ -15,18 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
-# Do python version checking up front.
 import sys
-
-min_python_version = (2, 4)
-if sys.version_info < min_python_version:
-    str_version = '.'.join([str(part) for part in min_python_version])
-    print >> sys.stderr, ('This script requires python %s or higher!' %
-                          str_version)
-    sys.exit(1)
-
-# Done with version checking. Get on with real work.
-
 import optparse
 import re
 import warnings
