@@ -185,7 +185,7 @@ def t_ANY_error(t):
         t.lexer.lineno, t.value[:10])
     t.lexer.skip(1)
 
-lex.lex(reflags=re.MULTILINE)
+lex.lex(reflags=re.MULTILINE|re.VERBOSE)
 
 def print_tokens(f):
     if isinstance(f, basestring):
