@@ -23,7 +23,11 @@ import os
 
 from MorkDB.filters import enumerate_filters, list_filters
 
-version = '2.2'
+from pkg_resources import get_distribution, DistributionNotFound
+try:
+    version = get_distribution('mork-converter').version
+except DistributionNotFound:
+    version = 'unknown'
 
 # Override warning format, copy-paste from warnings.py with changes.
 def _show_warning(message, category, filename, lineno, file=None, line=None):
