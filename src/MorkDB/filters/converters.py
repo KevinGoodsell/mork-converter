@@ -159,7 +159,7 @@ class MsgFlags(Flags):
     description = 'Converter for message and thread flags.'
 
     flag_values = ['Read', 'Replied', 'Marked', 'Expunged', 'HasRe', 'Elided',
-                   None, 'Offline', 'Watched', 'SenderAuthed', 'Partial',
+                   'FeedMsg', 'Offline', 'Watched', 'SenderAuthed', 'Partial',
                    'Queued', 'Forwarded', None, None, None, 'New', None,
                    'Ignored', None, None, 'IMAPDeleted', 'MDNReportNeeded',
                    'MDNReportSent', 'Template', None, None, None, 'Attachment']
