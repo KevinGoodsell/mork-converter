@@ -148,7 +148,8 @@ class Flags(Int):
         if ival:
             warnings.warn('unknown flags\n'
                           ' [value: 0x%x; row namespace: %s; column: %s]' %
-                          (ival, field.row_ns, field.column))
+                              (ival, field.row_ns, field.column),
+                          stacklevel=2)
 
         return result
 
