@@ -1,5 +1,6 @@
+from __future__ import absolute_import
 import sys
-from filterbase import Filter
+from .filterbase import Filter
 
 class JsonOutput(Filter):
 	def __init__(self):

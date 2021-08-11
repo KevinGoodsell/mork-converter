@@ -18,18 +18,25 @@ morkyacc.py -- PLY-based parser for Mork database files.
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 import re
 import warnings
 import os
+
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
 import ply.yacc as yacc
 
-from MorkDB.morklex import tokens
-import MorkDB.morkast as morkast
+from .morklex import tokens
+from . import morkast
 
 def p_mork_db(p):
     '''
@@ -314,9 +321,9 @@ def p_object_id_refscope(p):
 
 def p_error(tok):
     if tok is None:
-        print 'Syntax error at end of input'
+        print('Syntax error at end of input')
     else:
-        print 'Syntax error at token', tok
+        print('Syntax error at token', tok)
         # Try to continue
         yacc.errok()
 
@@ -327,7 +334,7 @@ def parse(data):
 
 def parse_file(f):
     filename = None
-    if isinstance(f, basestring):
+    if isinstance(f, (unicode, bytes)):
         filename = f
         # Read a cached parse tree if possible
         tree = _get_parse_tree(filename)

@@ -19,10 +19,11 @@ for building them from Abstract Syntax Trees.
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 import warnings
 import re
 
-import MorkDB.morkast as morkast
+from . import morkast
 
 class MorkDict(dict):
     def __init__(self):
@@ -30,7 +31,7 @@ class MorkDict(dict):
 
         # I'm not really sure this initialization is right. It seems
         # unnecessary in test files, but should also be harmless.
-        for i in xrange(0x80):
+        for i in range(0x80):
             col = '%X' % i
             value = chr(i)
             self[col] = value
@@ -190,7 +191,7 @@ class MorkRow(dict):
         dict.__init__(self)
 
     def column_names(self):
-        return self.keys()
+        return list(self.keys())
 
     @staticmethod
     def from_ast(ast, db, default_namespace=None):
@@ -315,7 +316,7 @@ class MorkDatabase(object):
                 row_id_ast = row.rowid
                 MorkRow.from_ast(row, self, table_namespace)
             else:
-                raise StandardError('Bad row type: %s' % type(row))
+                raise Exception('Bad row type: %s' % type(row))
 
             (rowid, row_namespace) = self._dissectId(row_id_ast, table_namespace)
 

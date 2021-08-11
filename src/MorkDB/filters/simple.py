@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
-from filterbase import Filter
+from __future__ import absolute_import
+from .filterbase import Filter
 
 class StripEmptyCells(Filter):
     '''
@@ -34,7 +35,7 @@ class StripEmptyCells(Filter):
             return
 
         for (row_namespace, row_id, row) in db.rows.items():
-            for (col, val) in row.items():
+            for (col, val) in list(row.items()):
                 if not val:
                     del row[col]
 

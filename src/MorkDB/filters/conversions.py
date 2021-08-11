@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, print_function
 import optparse
 import warnings
 import sys
 
-from filterbase import Filter
-import converters
+from .filterbase import Filter
+from . import converters
 
 _converters = {
     # General converters first.
@@ -193,7 +194,7 @@ _conversions = {
 
 def _print_conversions(option, opt_str, value, parser):
     if opt_str == '--show-all-conversions':
-        converters = _converters.items()
+        converters = list(_converters.items())
     else:
         # Generic only.
         converters = [(name, converter)
@@ -205,7 +206,7 @@ def _print_conversions(option, opt_str, value, parser):
 
     name_len = max(len(name) for (name, converter) in converters)
     for (name, converter) in converters:
-        print '%-*s  %s' % (name_len, name, converter.description)
+        print('%-*s  %s' % (name_len, name, converter.description))
 
     sys.exit()
 
@@ -275,7 +276,7 @@ class FieldConverter(Filter):
                     field.set_value(row_namespace, col, value)
                     try:
                         row[col] = converter.convert(field)
-                    except converters.ConversionError, e:
+                    except converters.ConversionError as e:
                         warnings.warn(
                             'unconvertible value, consider using '
                             '--convert option\n'

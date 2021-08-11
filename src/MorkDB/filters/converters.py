@@ -18,6 +18,11 @@ import warnings
 import time
 import re
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
 class FieldInfo(object):
     '''Holds all the information a converter might need.'''
 
@@ -69,7 +74,7 @@ class Int(FieldConverter):
     def _to_int(self, value):
         try:
             return int(value, self.base)
-        except ValueError, e:
+        except ValueError as e:
             raise ConversionError(str(e))
 
 class IntHex(Int):
@@ -109,7 +114,7 @@ class HierDelim(Int):
         ival = self._to_int(field.value)
         try:
             cval = chr(ival)
-        except ValueError, e:
+        except ValueError as e:
             raise ConversionError(str(e))
         if cval == '^':
             return 'kOnlineHierarchySeparatorUnknown'
@@ -426,7 +431,7 @@ class Seconds(Time):
             seconds = as_int / self.divisor
             return time.localtime(seconds)
         # This should catch errors from int() and localtime()
-        except ValueError, e:
+        except ValueError as e:
             raise ConversionError(str(e))
 
 
@@ -437,7 +442,7 @@ class FormattedTime(Time):
     def _to_time(self, field):
         try:
             return time.strptime(field.value, self.parse_format)
-        except ValueError, e:
+        except ValueError as e:
             raise ConversionError(str(e))
 
 class SecondsHex(Seconds):
@@ -465,7 +470,7 @@ class SecondsGuessBase(Seconds):
             seconds = int(field.value, base)
             return time.localtime(seconds)
         # This should catch errors from int() and localtime()
-        except ValueError, e:
+        except ValueError as e:
             raise ConversionError(str(e))
 
     def _search_for_base(self, field):
@@ -477,7 +482,7 @@ class SecondsGuessBase(Seconds):
         else:
             try:
                 as_dec = int(field.value)
-            except ValueError, e:
+            except ValueError as e:
                 raise ConversionError(str(e))
 
             warnings.warn("uncertain number base; consider using --convert "
