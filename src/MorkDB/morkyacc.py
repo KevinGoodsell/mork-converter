@@ -348,7 +348,7 @@ def parse_file(f):
         # Cache the parse tree for later use
         tree_name = filename + '.parse-tree'
         try:
-            pickle.dump(tree, open(tree_name, 'w'), pickle.HIGHEST_PROTOCOL)
+            pickle.dump(tree, open(tree_name, 'wb'), pickle.HIGHEST_PROTOCOL)
         except IOError:
             pass
 
@@ -363,6 +363,8 @@ def _get_parse_tree(filename):
         return None
 
     if tree_st.st_mtime > mork_st.st_mtime:
-        return pickle.load(open(tree_name))
+        try:
+            return pickle.load(open(tree_name, 'rb'))
+        except: pass
 
     return None
