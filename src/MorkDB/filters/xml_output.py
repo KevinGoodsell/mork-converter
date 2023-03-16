@@ -20,12 +20,13 @@
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import, print_function
 import re
 import warnings
 import sys
 
-from filterbase import Filter
-from encoding import EncodingStream
+from .filterbase import Filter
+from .encoding import EncodingStream
 
 # Filter is available as a base class for filter classes, but it's not
 # necessary. Filters can be classes or class instances. In this case it
@@ -67,26 +68,27 @@ class XmlOutput(Filter):
             return
 
         if opts.outname is None or opts.outname == '-':
-            f = EncodingStream(opts.out_encoding, sys.stdout)
+            bytes_stdout = getattr(sys.stdout, 'buffer', sys.stdout)
+            f = EncodingStream(opts.out_encoding, bytes_stdout)
         else:
             f = EncodingStream.open(opts.out_encoding, opts.outname)
 
         self._output(db, f)
 
     def _output(self, db, f):
-        print >> f, '<?xml version="1.0"?>'
-        print >> f, '<morkxml>'
+        print('<?xml version="1.0"?>', file=f)
+        print('<morkxml>', file=f)
 
         for (namespace, oid, table) in db.tables.items():
             meta = db.meta_tables.get((namespace, oid))
             self._write_table(f, namespace, oid, table, meta)
 
-        print >> f, '</morkxml>'
+        print('</morkxml>', file=f)
 
     def _write_table(self, f, namespace, oid, table, meta=None, indent=1):
         indent_str = self._indent_str * indent
-        print >> f, '%s<table namespace=%s id=%s>' % (indent_str,
-            self._format_attribute(namespace), self._format_attribute(oid))
+        print('%s<table namespace=%s id=%s>' % (indent_str,
+            self._format_attribute(namespace), self._format_attribute(oid)), file=f)
 
         for (row_namespace, row_id, row) in table:
             self._write_row(f, row_namespace, row_id, row, indent + 1)
@@ -94,11 +96,11 @@ class XmlOutput(Filter):
         if meta is not None:
             self._write_meta_table(f, meta, indent + 1)
 
-        print >> f, '%s</table>' % indent_str
+        print('%s</table>' % indent_str, file=f)
 
     def _write_meta_table(self, f, meta, indent):
         indent_str = self._indent_str * indent
-        print >> f, '%s<metatable>' % indent_str
+        print('%s<metatable>' % indent_str, file=f)
 
         for (column, value) in meta.cells.items():
             self._write_cell(f, column, value, indent + 1)
@@ -106,22 +108,22 @@ class XmlOutput(Filter):
         for (namespace, oid, row) in meta.rows:
             self._write_row(f, namespace, oid, row, indent + 1)
 
-        print >> f, '%s</metatable>' % indent_str
+        print('%s</metatable>' % indent_str, file=f)
 
     def _write_row(self, f, namespace, oid, row, indent):
         indent_str = self._indent_str * indent
-        print >> f, '%s<row namespace=%s id=%s>' % (indent_str,
-            self._format_attribute(namespace), self._format_attribute(oid))
+        print('%s<row namespace=%s id=%s>' % (indent_str,
+            self._format_attribute(namespace), self._format_attribute(oid)), file=f)
 
         for (column, value) in row.items():
             self._write_cell(f, column, value, indent + 1)
 
-        print >> f, '%s</row>' % indent_str
+        print('%s</row>' % indent_str, file=f)
 
     def _write_cell(self, f, column, value, indent):
         indent_str = self._indent_str * indent
-        print >> f, '%s<cell column=%s>%s</cell>' % (indent_str,
-            self._format_attribute(column), self._format_element_text(value))
+        print('%s<cell column=%s>%s</cell>' % (indent_str,
+            self._format_attribute(column), self._format_element_text(value)), file=f)
 
     # Regex for stuff that's not in the 'Char' production of the XML grammar
     _non_char = (

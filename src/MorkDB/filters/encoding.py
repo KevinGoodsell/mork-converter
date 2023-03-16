@@ -14,12 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 import warnings
 import codecs
 import re
 import optparse
 
-from filterbase import Filter
+from .filterbase import Filter
+
+try:
+    unicode
+except NameError:
+    unicode = str
 
 class FieldInfo(object):
     '''
@@ -152,7 +158,7 @@ def _decode_known_utf16(field):
 
     return field.value.decode(codec)
 
-_control_matcher = re.compile(ur'[\x80-\x9f]')
+_control_matcher = re.compile(u'[\\x80-\\x9f]')
 def _decode_iso_8859(field):
     '''
     Decoder that uses one of the ISO-8859 encodings, and fails if the result
@@ -265,7 +271,7 @@ class EncodingStream(object):
 
     @classmethod
     def open(cls, output_encoding, filename):
-        f = open(filename, 'w')
+        f = open(filename, 'wb')
         return cls(output_encoding, f)
 
     def write(self, s):
@@ -300,4 +306,4 @@ class EncodingStream(object):
         else:
             replacement = normalized
 
-        return (replacement, self._boms.get(replacement, ''))
+        return (replacement, self._boms.get(replacement, b''))

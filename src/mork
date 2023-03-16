@@ -15,18 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
-# Do python version checking up front.
+from __future__ import print_function
 import sys
-
-min_python_version = (2, 4)
-if sys.version_info < min_python_version:
-    str_version = '.'.join([str(part) for part in min_python_version])
-    print >> sys.stderr, ('This script requires python %s or higher!' %
-                          str_version)
-    sys.exit(1)
-
-# Done with version checking. Get on with real work.
-
 import optparse
 import re
 import warnings
@@ -34,7 +24,11 @@ import os
 
 from MorkDB.filters import enumerate_filters, list_filters
 
-version = '2.2'
+from pkg_resources import get_distribution, DistributionNotFound
+try:
+    version = get_distribution('mork-converter').version
+except DistributionNotFound:
+    version = 'unknown'
 
 # Override warning format, copy-paste from warnings.py with changes.
 def _show_warning(message, category, filename, lineno, file=None, line=None):
@@ -59,7 +53,7 @@ def print_tokens(f):
 def print_syntax_tree(f):
     import MorkDB.morkyacc as morkyacc
     tree = morkyacc.parse_file(f)
-    print tree
+    print(tree)
 
 _leading_space_matcher = re.compile(r'^\s+', re.MULTILINE)
 def _format_docstring(docstring, indent):
@@ -73,10 +67,10 @@ def print_filters():
         else:
             name = filt.__class__.__name__
 
-        print '%5d - %s' % (order, name)
+        print('%5d - %s' % (order, name))
 
         if filt.__doc__:
-            print _format_docstring(filt.__doc__, ' '*10)
+            print(_format_docstring(filt.__doc__, ' '*10))
 
 def process_database(f, filters, opts):
     import MorkDB.morkdb as morkdb
@@ -147,7 +141,7 @@ if __name__ == '__main__':
         sys.exit(main())
     except KeyboardInterrupt:
         sys.exit(1)
-    except IOError, e:
+    except IOError as e:
         import errno
         if e.errno != errno.EPIPE:
             raise

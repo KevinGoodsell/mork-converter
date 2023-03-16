@@ -18,9 +18,15 @@ morklex.py -- PLY-based lexical analyzer for Mork database files.
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 import ply.lex as lex
 import re
 import sys
+
+try:
+    unicode
+except NameError:
+    unicode = str
 
 tokens = (
     # 'Special' tokens
@@ -181,14 +187,14 @@ def t_ANY_mac_newline(t):
     t.lexer.lineno += len(t.value)
 
 def t_ANY_error(t):
-    print >> sys.stderr, "Lexing error at line %d, next chars: %r" % (
-        t.lexer.lineno, t.value[:10])
+    print("Lexing error at line %d, next chars: %r" % (
+        t.lexer.lineno, t.value[:10]), file=sys.stderr)
     t.lexer.skip(1)
 
-lex.lex(reflags=re.MULTILINE)
+lex.lex(reflags=re.MULTILINE|re.VERBOSE)
 
 def print_tokens(f):
-    if isinstance(f, basestring):
+    if isinstance(f, (unicode, bytes)):
         f = open(f)
 
     lex.input(f.read())
@@ -196,4 +202,4 @@ def print_tokens(f):
         tok = lex.token()
         if not tok:
             break
-        print tok
+        print(tok)

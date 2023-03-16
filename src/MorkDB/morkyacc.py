@@ -18,18 +18,25 @@ morkyacc.py -- PLY-based parser for Mork database files.
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 import re
 import warnings
 import os
+
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
 import ply.yacc as yacc
 
-from MorkDB.morklex import tokens
-import MorkDB.morkast as morkast
+from .morklex import tokens
+from . import morkast
 
 def p_mork_db(p):
     '''
@@ -314,9 +321,9 @@ def p_object_id_refscope(p):
 
 def p_error(tok):
     if tok is None:
-        print 'Syntax error at end of input'
+        print('Syntax error at end of input')
     else:
-        print 'Syntax error at token', tok
+        print('Syntax error at token', tok)
         # Try to continue
         yacc.errok()
 
@@ -327,7 +334,7 @@ def parse(data):
 
 def parse_file(f):
     filename = None
-    if isinstance(f, basestring):
+    if isinstance(f, (unicode, bytes)):
         filename = f
         # Read a cached parse tree if possible
         tree = _get_parse_tree(filename)
@@ -341,7 +348,7 @@ def parse_file(f):
         # Cache the parse tree for later use
         tree_name = filename + '.parse-tree'
         try:
-            pickle.dump(tree, open(tree_name, 'w'), pickle.HIGHEST_PROTOCOL)
+            pickle.dump(tree, open(tree_name, 'wb'), pickle.HIGHEST_PROTOCOL)
         except IOError:
             pass
 
@@ -356,6 +363,8 @@ def _get_parse_tree(filename):
         return None
 
     if tree_st.st_mtime > mork_st.st_mtime:
-        return pickle.load(open(tree_name))
+        try:
+            return pickle.load(open(tree_name, 'rb'))
+        except: pass
 
     return None

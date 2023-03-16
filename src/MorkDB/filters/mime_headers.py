@@ -14,11 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with mork-converter.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
 import re
 import warnings
 import quopri
 
-from filterbase import Filter
+from .filterbase import Filter
 
 class DecodeMimeHeaders(Filter):
     '''Filter to decode RFC 2047 MIME headers.'''
@@ -88,7 +89,7 @@ class DecodeMimeHeaders(Filter):
             return self._decode_string(charset, encoding.lower(), encoded)
         # There doesn't seem to be a more specific exception that can be used
         # here.
-        except Exception, e:
+        except Exception as e:
             val = m.group()
             warnings.warn('mime_headers decoding failed for %r (%s)' % (val, e))
             return val
