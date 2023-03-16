@@ -41,11 +41,20 @@ kevin-opensource@omegacrash.net
 
 Prerequisites
 -------------
-* Python 2, version 2.4 or higher. Python 3 is not supported.
+* Python 2, version 2.4 or higher or Python 3, versions 3.0, 3.1, and 3.3
+  are not supported.
   - Version 2.2 was developed and tested on Python 2.6, but I think 2.4
     should still work.
 * PLY (Python Lex-Yacc). Version 3.3 was used to develop and test this
   version.
+  - Version 3.11 with Python 3.10 has been tested.
+
+Installation
+------------
+This can easiest be installed with pip, without specifically needing to
+checkout this repository:
+
+  pip install git+https://github.com/KevinGoodsell/mork-converter.git#egg=mork-converter
 
 Basic Usage
 -----------
